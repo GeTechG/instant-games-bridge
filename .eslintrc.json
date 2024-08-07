@@ -1,7 +1,7 @@
 {
     "extends": [
         "airbnb",
-        "plugin:import/typescript"
+        "plugin:@typescript-eslint/recommended"
     ],
     "globals": {
         "PLUGIN_VERSION": true,
@@ -44,6 +44,8 @@
                 "allowForLoopAfterthoughts": true
             }
         ],
+        "import/extensions": "off",
+        "import/no-unresolved": "off",
         "import/prefer-default-export": "off",
         "import/no-extraneous-dependencies": "off",
         "no-underscore-dangle": "off",
@@ -57,6 +59,7 @@
                     "info"
                 ]
             }
-        ]
+        ],
+        "@typescript-eslint/no-explicit-any": "off"
     }
 }
