@@ -5,7 +5,7 @@ import {
 
 class YandexPlatformBridge extends PlatformBridgeBase {
     // platform
-    get platformId(): PLATFORM_ID;
+    get platformId(): typeof PLATFORM_ID[keyof typeof PLATFORM_ID];
 
     get platformLanguage(): string;
 

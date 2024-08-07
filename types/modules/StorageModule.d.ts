@@ -1,15 +1,16 @@
 import ModuleBase from './ModuleBase'
+import {STORAGE_TYPE} from "../constants";
 
 export default class StorageModule extends ModuleBase {
-    get defaultType(): any;
+    get defaultType(): typeof STORAGE_TYPE[keyof typeof STORAGE_TYPE];
 
-    isSupported(options: any): any;
+    isSupported(options: typeof STORAGE_TYPE[keyof typeof STORAGE_TYPE]): boolean;
 
-    isAvailable(options: any): any;
+    isAvailable(options: typeof STORAGE_TYPE[keyof typeof STORAGE_TYPE]): boolean;
 
-    get(key: any, options?: any): Promise<any>;
+    get(key: any, options?: typeof STORAGE_TYPE[keyof typeof STORAGE_TYPE]): Promise<any>;
 
-    set(key: any, value: any, options?: any): Promise<any>;
+    set(key: any, value: any, options?: typeof STORAGE_TYPE[keyof typeof STORAGE_TYPE]): Promise<any>;
 
-    delete(key: any, options: any): any;
+    delete(key: any, options?: typeof STORAGE_TYPE[keyof typeof STORAGE_TYPE]): any;
 }

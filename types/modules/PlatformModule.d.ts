@@ -1,8 +1,8 @@
 import ModuleBase from './ModuleBase'
-import { PLATFORM_MESSAGE } from '../constants'
+import { PLATFORM_ID, PLATFORM_MESSAGE } from '../constants'
 
 export default class PlatformModule extends ModuleBase {
-    get id(): any;
+    get id(): typeof PLATFORM_ID[keyof typeof PLATFORM_ID];
 
     get sdk(): any;
 

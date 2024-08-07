@@ -49,28 +49,28 @@ export default class InstantGamesBridge {
 
     get clipboard(): ClipboardModule;
 
-    get PLATFORM_ID(): PLATFORM_ID;
+    get PLATFORM_ID(): typeof PLATFORM_ID;
 
-    get PLATFORM_MESSAGE(): PLATFORM_MESSAGE;
+    get PLATFORM_MESSAGE(): typeof PLATFORM_MESSAGE;
 
-    get MODULE_NAME(): MODULE_NAME;
+    get MODULE_NAME(): typeof MODULE_NAME;
 
-    get EVENT_NAME(): EVENT_NAME;
+    get EVENT_NAME(): typeof EVENT_NAME;
 
-    get INTERSTITIAL_STATE(): INTERSTITIAL_STATE;
+    get INTERSTITIAL_STATE(): typeof INTERSTITIAL_STATE;
 
-    get REWARDED_STATE(): REWARDED_STATE;
+    get REWARDED_STATE(): typeof REWARDED_STATE;
 
-    get BANNER_STATE(): BANNER_STATE;
+    get BANNER_STATE(): typeof BANNER_STATE;
 
-    get STORAGE_TYPE(): STORAGE_TYPE;
+    get STORAGE_TYPE(): typeof STORAGE_TYPE;
 
-    get VISIBILITY_STATE(): VISIBILITY_STATE;
+    get VISIBILITY_STATE(): typeof VISIBILITY_STATE;
 
-    get DEVICE_TYPE(): DEVICE_TYPE;
+    get DEVICE_TYPE(): typeof DEVICE_TYPE;
 
     initialize(options?: Partial<{
-        forciblySetPlatformId: PLATFORM_ID,
+        forciblySetPlatformId: typeof PLATFORM_ID[keyof typeof PLATFORM_ID],
 
         platforms: Partial<{
             'game_distribution': {
