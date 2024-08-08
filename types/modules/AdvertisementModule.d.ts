@@ -35,7 +35,7 @@ declare class AdvertisementModule extends ModuleBase {
 
     showRewarded(options: any): void
 
-    isAdBlockDetected(): Promise<boolean>
+    checkAdBlock(): Promise<boolean>
 }
 
 type AdvertisementModuleEvent = AdvertisementModule & EventLite;
