@@ -1,15 +1,41 @@
-export default LeaderboardModule;
-declare class LeaderboardModule extends ModuleBase {
-    get isSupported(): any;
-    get isNativePopupSupported(): any;
-    get isMultipleBoardsSupported(): any;
-    get isSetScoreSupported(): any;
-    get isGetScoreSupported(): any;
-    get isGetEntriesSupported(): any;
-    setScore(options: any): any;
-    getScore(options: any): any;
-    getEntries(options: any): any;
+import ModuleBase from './ModuleBase'
+
+export interface LeaderboardPlayer {
+    id: string;
+    name: string;
+    score: number;
+    rank: number;
+    photos: string[];
+}
+
+export default class LeaderboardModule extends ModuleBase {
+    get isSupported(): boolean;
+
+    get isNativePopupSupported(): boolean;
+
+    get isMultipleBoardsSupported(): boolean;
+
+    get isSetScoreSupported(): boolean;
+
+    get isGetScoreSupported(): boolean;
+
+    get isGetEntriesSupported(): boolean;
+
+    setScore(options: {
+        leaderboardName: string;
+        score: number;
+    }): Promise<void>;
+
+    getScore(options: {
+        leaderboardName: string;
+    }): Promise<number>;
+
+    getEntries(options: {
+        leaderboardName: string;
+        includeUser?: boolean;
+        quantityAround?: number;
+        quantityTop?: number;
+    }): Promise<LeaderboardPlayer[]>;
+
     showNativePopup(options: any): any;
 }
-import ModuleBase from './ModuleBase';
-//# sourceMappingURL=LeaderboardModule.d.ts.map
