@@ -31,7 +31,7 @@ declare class AdvertisementModule extends ModuleBase {
 
     hideBanner(): void
 
-    showInterstitial(options: any): void
+    showInterstitial(options?: any): void
 
     showRewarded(options: any): void
 
