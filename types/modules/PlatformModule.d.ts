@@ -6,7 +6,7 @@ export default class PlatformModule extends ModuleBase {
 
     get sdk(): any;
 
-    get language(): any;
+    get language(): string;
 
     get payload(): any;
 
