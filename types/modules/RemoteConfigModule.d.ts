@@ -1,7 +1,14 @@
-export default RemoteConfigModule;
-declare class RemoteConfigModule extends ModuleBase {
-    get isSupported(): any;
-    get(options: any): any;
+import ModuleBase from './ModuleBase'
+
+interface GetFlagsOptions {
+    defaultFlags: object,
+    clientFeatures: {name: string, value: any}[]
 }
-import ModuleBase from './ModuleBase';
-//# sourceMappingURL=RemoteConfigModule.d.ts.map
+
+declare class RemoteConfigModule extends ModuleBase {
+    readonly isSupported: boolean
+
+    get(options?: GetFlagsOptions): Promise<never>;
+}
+
+export default RemoteConfigModule
