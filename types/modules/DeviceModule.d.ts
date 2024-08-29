@@ -1,6 +1,8 @@
-export default DeviceModule;
+import ModuleBase from './ModuleBase'
+import { DEVICE_TYPE } from '../constants'
+
 declare class DeviceModule extends ModuleBase {
-    get type(): any;
+    readonly type: typeof DEVICE_TYPE[keyof typeof DEVICE_TYPE]
 }
-import ModuleBase from './ModuleBase';
-//# sourceMappingURL=DeviceModule.d.ts.map
+
+export default DeviceModule
