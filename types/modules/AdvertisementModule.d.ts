@@ -33,7 +33,7 @@ declare class AdvertisementModule extends ModuleBase {
 
     showInterstitial(options?: any): void
 
-    showRewarded(options: any): void
+    showRewarded(options?: any): void
 
     checkAdBlock(): Promise<boolean>
 }
