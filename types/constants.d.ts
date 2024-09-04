@@ -9,6 +9,7 @@ export declare const PLATFORM_ID: {
     PLAYGAMA: 'playgama',
     WORTAL: 'wortal',
     PLAYDECK: 'playdeck',
+    TELEGRAM: 'telegram',
     MOCK: 'mock',
 }
 

@@ -49,6 +49,10 @@ class OkPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
+    get isExternalLinksAllowed() {
+        return false
+    }
+
     // clipboard
     get isClipboardSupported() {
         return false
@@ -137,7 +141,7 @@ class OkPlatformBridge extends PlatformBridgeBase {
         return super.isStorageAvailable(storageType)
     }
 
-    getDataFromStorage(key, storageType) {
+    getDataFromStorage(key, storageType, tryParseJson) {
         if (storageType === STORAGE_TYPE.PLATFORM_INTERNAL) {
             if (!this._hasValuableAccessPermission) {
                 return Promise.reject(ERROR.STORAGE_NOT_AVAILABLE)
@@ -159,11 +163,13 @@ class OkPlatformBridge extends PlatformBridgeBase {
                                     return
                                 }
 
-                                let value
-                                try {
-                                    value = JSON.parse(response[item])
-                                } catch (e) {
-                                    value = response[item]
+                                let value = response[item]
+                                if (tryParseJson) {
+                                    try {
+                                        value = JSON.parse(response[item])
+                                    } catch (e) {
+                                        // keep value as it is
+                                    }
                                 }
 
                                 values.push(value)
@@ -178,11 +184,13 @@ class OkPlatformBridge extends PlatformBridgeBase {
                             return
                         }
 
-                        let value
-                        try {
-                            value = JSON.parse(response[key])
-                        } catch (e) {
-                            value = response[key]
+                        let value = response[key]
+                        if (tryParseJson) {
+                            try {
+                                value = JSON.parse(response[key])
+                            } catch (e) {
+                                // keep value as it is
+                            }
                         }
 
                         resolve(value)
@@ -193,7 +201,7 @@ class OkPlatformBridge extends PlatformBridgeBase {
             })
         }
 
-        return super.getDataFromStorage(key, storageType)
+        return super.getDataFromStorage(key, storageType, tryParseJson)
     }
 
     setDataToStorage(key, value, storageType) {

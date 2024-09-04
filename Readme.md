@@ -10,7 +10,8 @@ One SDK for cross-platform publishing HTML5 games.
 + [Crazy Games](https://crazygames.com)
 + [Yandex Games](https://yandex.com/games)
 + [Wortal](https://wortal.ai)
-+ [PlayDeck](https://tonplay.io)
++ [PlayDeck](https://playdeck.io)
++ [Telegram](https://core.telegram.org/bots/webapps)
 + [VK Play](https://vkplay.ru/)
 + [VK](https://vk.com)
 + [OK](https://ok.ru)
@@ -25,7 +26,7 @@ One SDK for cross-platform publishing HTML5 games.
 + [Defold](https://github.com/instant-games-bridge/instant-games-bridge-defold)
 
 ## Useful links
-+ [Documentation](https://developer.playgama.com/sdk) [ENG]
++ [Documentation](https://wiki.playgama.com/) [ENG]
 + [Documentation](https://getbridge.org) [Other]
 + [Roadmap](https://trello.com/b/NjF29vTW)
 + [Discord](https://discord.gg/pzqd2upxr8)

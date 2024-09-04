@@ -21,6 +21,11 @@ class AbsoluteGamesPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
+    // social
+    get isExternalLinksAllowed() {
+        return false
+    }
+
     initialize() {
         if (this._isInitialized) {
             return Promise.resolve()
@@ -125,7 +130,7 @@ class AbsoluteGamesPlatformBridge extends PlatformBridgeBase {
         return super.isStorageAvailable(storageType)
     }
 
-    getDataFromStorage(key, storageType) {
+    getDataFromStorage(key, storageType, tryParseJson) {
         if (storageType === STORAGE_TYPE.PLATFORM_INTERNAL) {
             return new Promise((resolve, reject) => {
                 if (this._platformStorageCachedData) {
@@ -179,7 +184,7 @@ class AbsoluteGamesPlatformBridge extends PlatformBridgeBase {
             })
         }
 
-        return super.getDataFromStorage(key, storageType)
+        return super.getDataFromStorage(key, storageType, tryParseJson)
     }
 
     setDataToStorage(key, value, storageType) {

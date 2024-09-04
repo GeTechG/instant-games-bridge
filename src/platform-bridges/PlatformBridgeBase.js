@@ -118,7 +118,7 @@ class PlatformBridgeBase {
     }
 
     get isExternalLinksAllowed() {
-        return false
+        return true
     }
 
     // device
@@ -285,7 +285,7 @@ class PlatformBridgeBase {
         }
     }
 
-    getDataFromStorage(key, storageType) {
+    getDataFromStorage(key, storageType, tryParseJson) {
         switch (storageType) {
             case STORAGE_TYPE.LOCAL_STORAGE: {
                 if (this._localStorage) {
@@ -293,13 +293,13 @@ class PlatformBridgeBase {
                         const values = []
 
                         for (let i = 0; i < key.length; i++) {
-                            values.push(this._getDataFromLocalStorage(key[i]))
+                            values.push(this._getDataFromLocalStorage(key[i], tryParseJson))
                         }
 
                         return Promise.resolve(values)
                     }
 
-                    const value = this._getDataFromLocalStorage(key)
+                    const value = this._getDataFromLocalStorage(key, tryParseJson)
                     return Promise.resolve(value)
                 }
                 return Promise.reject(ERROR.STORAGE_NOT_SUPPORTED)
@@ -491,10 +491,10 @@ class PlatformBridgeBase {
         return Promise.reject()
     }
 
-    _getDataFromLocalStorage(key) {
+    _getDataFromLocalStorage(key, tryParseJson) {
         let value = this._localStorage.getItem(key)
 
-        if (typeof value === 'string') {
+        if (tryParseJson && typeof value === 'string') {
             try {
                 value = JSON.parse(value)
             } catch (e) {

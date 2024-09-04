@@ -39,6 +39,11 @@ class WortalPlatformBridge extends PlatformBridgeBase {
         return super.deviceType
     }
 
+    // social
+    get isExternalLinksAllowed() {
+        return false
+    }
+
     #supportedApis
 
     initialize() {
@@ -195,7 +200,7 @@ class WortalPlatformBridge extends PlatformBridgeBase {
         return super.isStorageAvailable(storageType)
     }
 
-    getDataFromStorage(key, storageType) {
+    getDataFromStorage(key, storageType, tryParseJson) {
         if (storageType === STORAGE_TYPE.PLATFORM_INTERNAL) {
             return new Promise((resolve, reject) => {
                 const keys = Array.isArray(key) ? key : [key]
@@ -232,7 +237,7 @@ class WortalPlatformBridge extends PlatformBridgeBase {
             })
         }
 
-        return super.getDataFromStorage(key, storageType)
+        return super.getDataFromStorage(key, storageType, tryParseJson)
     }
 
     setDataToStorage(key, value, storageType) {

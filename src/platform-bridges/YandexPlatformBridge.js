@@ -70,6 +70,10 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
+    get isExternalLinksAllowed() {
+        return false
+    }
+
     // leaderboard
     get isLeaderboardSupported() {
         return true
@@ -259,7 +263,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return super.isStorageAvailable(storageType)
     }
 
-    getDataFromStorage(key, storageType) {
+    getDataFromStorage(key, storageType, tryParseJson) {
         if (storageType === STORAGE_TYPE.PLATFORM_INTERNAL) {
             if (!this._isPlayerAuthorized) {
                 return Promise.reject()
@@ -317,7 +321,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             })
         }
 
-        return super.getDataFromStorage(key, storageType)
+        return super.getDataFromStorage(key, storageType, tryParseJson)
     }
 
     setDataToStorage(key, value, storageType) {
@@ -667,7 +671,13 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
             this.#payments.getPurchases()
                 .then((result) => {
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_PURCHASES, result)
+                    const purchases = result.map((i) => ({
+                        developerPayload: i.developerPayload,
+                        productID: i.productID,
+                        purchaseToken: i.purchaseToken,
+                    }))
+
+                    this._resolvePromiseDecorator(ACTION_NAME.GET_PURCHASES, purchases)
                 })
                 .catch((error) => {
                     this._rejectPromiseDecorator(ACTION_NAME.GET_PURCHASES, error)
@@ -688,7 +698,17 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
             this.#payments.getCatalog()
                 .then((result) => {
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_CATALOG, result)
+                    const catalog = result.map((i) => ({
+                        id: i.id,
+                        description: i.description,
+                        imageURI: i.imageURI,
+                        price: i.price,
+                        priceCurrencyCode: i.priceCurrencyCode,
+                        priceValue: i.priceValue,
+                        priceCurrencyImage: i.getPriceCurrencyImage('medium'),
+                        title: i.title,
+                    }))
+                    this._resolvePromiseDecorator(ACTION_NAME.GET_CATALOG, catalog)
                 })
                 .catch((error) => {
                     this._rejectPromiseDecorator(ACTION_NAME.GET_CATALOG, error)
