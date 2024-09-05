@@ -11,15 +11,18 @@ type BannerOptions = object | {
 } | {
     containerId: string
 }
+export type BannerState = typeof BANNER_STATE[keyof typeof BANNER_STATE];
+export type InterstitialState = typeof INTERSTITIAL_STATE[keyof typeof INTERSTITIAL_STATE];
+export type RewardState = typeof REWARDED_STATE[keyof typeof REWARDED_STATE];
 
 declare class AdvertisementModule extends ModuleBase {
     get isBannerSupported(): boolean
 
-    get bannerState(): typeof BANNER_STATE[keyof typeof BANNER_STATE]
+    get bannerState(): BannerState
 
-    get interstitialState(): typeof INTERSTITIAL_STATE[keyof typeof INTERSTITIAL_STATE]
+    get interstitialState(): InterstitialState
 
-    get rewardedState(): typeof REWARDED_STATE[keyof typeof REWARDED_STATE]
+    get rewardedState(): RewardState
 
     get minimumDelayBetweenInterstitial(): number
 
