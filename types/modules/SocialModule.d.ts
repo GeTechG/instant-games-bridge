@@ -1,20 +1,35 @@
-export default SocialModule;
+import ModuleBase from './ModuleBase'
+
 declare class SocialModule extends ModuleBase {
-    get isInviteFriendsSupported(): any;
-    get isJoinCommunitySupported(): any;
-    get isShareSupported(): any;
-    get isCreatePostSupported(): any;
-    get isAddToHomeScreenSupported(): any;
-    get isAddToFavoritesSupported(): any;
-    get isRateSupported(): any;
-    get isExternalLinksAllowed(): any;
-    inviteFriends(options: any): any;
-    joinCommunity(options: any): any;
-    share(options: any): any;
-    createPost(options: any): any;
-    addToHomeScreen(): any;
-    addToFavorites(): any;
-    rate(): any;
+    readonly isInviteFriendsSupported: boolean
+
+    readonly isJoinCommunitySupported: boolean
+
+    readonly isShareSupported: boolean
+
+    readonly isCreatePostSupported: boolean
+
+    readonly isAddToHomeScreenSupported: boolean
+
+    readonly isAddToFavoritesSupported: boolean
+
+    readonly isRateSupported: boolean
+
+    readonly isExternalLinksAllowed: boolean
+
+    inviteFriends(options: any): Promise<any>;
+
+    joinCommunity(options: any): Promise<any>;
+
+    share(options: any): Promise<any>;
+
+    createPost(options: Promise<any>): Promise<any>;
+
+    addToHomeScreen(): Promise<any>;
+
+    addToFavorites(): Promise<any>;
+
+    rate(): Promise<void>;
 }
-import ModuleBase from './ModuleBase';
-//# sourceMappingURL=SocialModule.d.ts.map
+
+export default SocialModule
