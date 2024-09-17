@@ -36,6 +36,7 @@ import PlaygamaPlatformBridge from './platform-bridges/PlaygamaPlatformBridge'
 import PlayDeckPlatformBridge from './platform-bridges/PlayDeckPlatformBridge'
 import WortalPlatformBridge from './platform-bridges/WortalPlatformBridge'
 import TelegramPlatformBridge from './platform-bridges/TelegramPlatformBridge'
+import PokiPlatformBridge from './platform-bridges/PokiPlatformBridge'
 
 class InstantGamesBridge {
     get version() {
@@ -201,6 +202,8 @@ class InstantGamesBridge {
                 platformId = PLATFORM_ID.PLAYDECK
             } else if (url.hash.includes('tgWebAppData')) {
                 platformId = PLATFORM_ID.TELEGRAM
+            } else if (url.hostname.includes('poki') || url.href.includes('poki.')) {
+                platformId = PLATFORM_ID.POKI
             }
         }
 
@@ -268,6 +271,12 @@ class InstantGamesBridge {
             case PLATFORM_ID.TELEGRAM: {
                 this.#platformBridge = new TelegramPlatformBridge(
                     this._options && this._options.platforms && this._options.platforms[PLATFORM_ID.TELEGRAM],
+                )
+                break
+            }
+            case PLATFORM_ID.POKI: {
+                this.#platformBridge = new PokiPlatformBridge(
+                    this._options && this._options.platforms && this._options.platforms[PLATFORM_ID.POKI],
                 )
                 break
             }
