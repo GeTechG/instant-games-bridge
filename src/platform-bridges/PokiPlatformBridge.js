@@ -9,8 +9,6 @@ import {
 } from '../constants'
 
 class PokiPlatformBridge extends PlatformBridgeBase {
-    #isGameplayActive = false
-
     // platform
     get platformId() {
         return PLATFORM_ID.POKI
@@ -62,12 +60,10 @@ class PokiPlatformBridge extends PlatformBridgeBase {
             }
             case PLATFORM_MESSAGE.GAMEPLAY_STARTED: {
                 this._platformSdk.gameplayStart()
-                this.#isGameplayActive = true
                 return Promise.resolve()
             }
             case PLATFORM_MESSAGE.GAMEPLAY_STOPPED: {
                 this._platformSdk.gameplayStop()
-                this.#isGameplayActive = false
                 return Promise.resolve()
             }
             default: {
@@ -77,28 +73,16 @@ class PokiPlatformBridge extends PlatformBridgeBase {
     }
 
     showInterstitial() {
-        if (this.#isGameplayActive) {
-            this._platformSdk.gameplayStop()
-        }
         this._platformSdk.commercialBreak(() => {
             this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
         }).then(() => {
             this._setInterstitialState(INTERSTITIAL_STATE.CLOSED)
-            if (this.#isGameplayActive) {
-                this._platformSdk.gameplayStart()
-            }
         }).catch(() => {
             this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
-            if (this.#isGameplayActive) {
-                this._platformSdk.gameplayStart()
-            }
         })
     }
 
     showRewarded() {
-        if (this.#isGameplayActive) {
-            this._platformSdk.gameplayStop()
-        }
         this._platformSdk.rewardedBreak(() => {
             this._setRewardedState(REWARDED_STATE.OPENED)
         }).then((success) => {
@@ -108,9 +92,6 @@ class PokiPlatformBridge extends PlatformBridgeBase {
                 this._setRewardedState(REWARDED_STATE.FAILED)
             }
             this._setRewardedState(REWARDED_STATE.CLOSED)
-            if (this.#isGameplayActive) {
-                this._platformSdk.gameplayStart()
-            }
         })
     }
 }
