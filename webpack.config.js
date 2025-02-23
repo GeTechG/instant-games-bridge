@@ -8,6 +8,9 @@ module.exports = {
     output: {
         filename: 'playgama-bridge.js',
         path: path.resolve(__dirname, 'dist'),
+        library: {
+            type: 'umd',
+        }
     },
     module: {
         rules: [

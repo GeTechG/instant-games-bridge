@@ -22,7 +22,7 @@ import {
     PLATFORM_MESSAGE,
 } from './constants'
 
-export default class InstantGamesBridge {
+export default class PlaygamaBridge {
     get version(): string;
 
     get isInitialized(): boolean;

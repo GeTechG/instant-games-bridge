@@ -1,6 +1,11 @@
-export default GameModule;
+import EventLite from 'event-lite'
+import ModuleBase from './ModuleBase'
+import { VISIBILITY_STATE } from '../constants'
+
 declare class GameModule extends ModuleBase {
-    get visibilityState(): any;
+    get visibilityState(): typeof VISIBILITY_STATE[keyof typeof VISIBILITY_STATE]
 }
-import ModuleBase from './ModuleBase';
-//# sourceMappingURL=GameModule.d.ts.map
+
+type GameModuleEvent = GameModule & EventLite;
+
+export default GameModuleEvent

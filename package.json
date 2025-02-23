@@ -17,6 +17,14 @@
         "url": "https://github.com/playgama/bridge/issues"
     },
     "homepage": "https://github.com/playgama/bridge",
+    "exports": {
+        ".": {
+            "import": {
+                "default": "./dist/playgama-bridge.js",
+                "types": "./types/index.d.ts"
+            }
+        }
+    },
     "dependencies": {
         "event-lite": "^0.1.2",
         "jwt-decode": "^4.0.0"
@@ -24,13 +32,13 @@
     "devDependencies": {
         "@babel/core": "^7.17.8",
         "@babel/preset-env": "^7.16.11",
+        "@types/eslint__js": "^8.42.3",
         "babel-loader": "^8.2.3",
         "eslint": "^8.55.0",
-        "@types/eslint__js": "^8.42.3",
         "eslint-config-airbnb": "^19.0.4",
-        "eslint-webpack-plugin": "^4.0.1",
-        "webpack": "^5.70.0",
-        "webpack-cli": "^4.9.2",
-        "typescript": "^5.5.4"
+        "eslint-webpack-plugin": "^4.2.0",
+        "typescript": "^5.5.4",
+        "webpack-cli": "^6.0.1",
+        "webpack": "^5.98.0"
     }
 }

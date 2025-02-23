@@ -30,7 +30,7 @@ declare class AdvertisementModule extends ModuleBase {
 
     constructor(platformBridge: any)
 
-    showBanner(options: BannerOptions): void
+    showBanner(options?: BannerOptions): void
 
     hideBanner(): void
 
