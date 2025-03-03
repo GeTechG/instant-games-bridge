@@ -1,10 +1,41 @@
-export default PaymentsModule;
-declare class PaymentsModule extends ModuleBase {
-    get isSupported(): any;
-    purchase(options: any): any;
-    getPurchases(): any;
-    getCatalog(): any;
-    consumePurchase(options: any): any;
+import ModuleBase from './ModuleBase'
+
+export interface Purchase {
+    productID: string;
+    purchaseToken: string;
 }
-import ModuleBase from './ModuleBase';
-//# sourceMappingURL=PaymentsModule.d.ts.map
+
+export interface CatalogItem {
+    id: string;
+    title: string;
+    description: string;
+    imageURI: string;
+    price: string;
+    priceCurrencyCode: string;
+    priceCurrencyImage: string;
+    priceValue: number;
+}
+
+export interface YandexPurchase {
+    id: string;
+}
+
+declare class PaymentsModule extends ModuleBase {
+    public get isSupported(): boolean;
+
+    public get isGetCatalogSupported(): boolean;
+
+    public get isGetPurchasesSupported(): boolean;
+
+    public get isConsumePurchaseSupported(): boolean;
+
+    public purchase(options: YandexPurchase): Promise<Purchase>;
+
+    public getPurchases(): Promise<Purchase[]>;
+
+    public getCatalog(): Promise<CatalogItem[]>;
+
+    public consumePurchase(options: {purchaseToken?: string}): Promise<void>;
+}
+
+export default PaymentsModule

@@ -12,7 +12,7 @@ export default class PlatformModule extends ModuleBase {
 
     get tld(): any;
 
-    sendMessage(message: PLATFORM_MESSAGE): any;
+    sendMessage(message: typeof PLATFORM_MESSAGE[keyof typeof PLATFORM_MESSAGE]): any;
 
     getServerTime(): any;
 }
