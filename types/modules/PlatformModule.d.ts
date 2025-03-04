@@ -14,5 +14,5 @@ export default class PlatformModule extends ModuleBase {
 
     sendMessage(message: typeof PLATFORM_MESSAGE[keyof typeof PLATFORM_MESSAGE]): any;
 
-    getServerTime(): any;
+    getServerTime(): Promise<number>;
 }
