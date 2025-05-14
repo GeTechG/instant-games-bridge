@@ -1,8 +1,7 @@
 import ModuleBase from './ModuleBase'
 
 export interface Purchase {
-    productID: string;
-    purchaseToken: string;
+    id: string;
 }
 
 export interface CatalogItem {
@@ -29,7 +28,7 @@ declare class PaymentsModule extends ModuleBase {
 
     public get isConsumePurchaseSupported(): boolean;
 
-    public purchase(options: YandexPurchase): Promise<Purchase>;
+    public purchase(id: string): Promise<Purchase>;
 
     public getPurchases(): Promise<Purchase[]>;
 
