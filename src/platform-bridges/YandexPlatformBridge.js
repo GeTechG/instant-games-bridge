@@ -52,6 +52,14 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return super.platformTld
     }
 
+    get isPlatformGetAllGamesSupported() {
+        return true
+    }
+
+    get isPlatformGetGameByIdSupported() {
+        return true
+    }
+
     // device
     get deviceType() {
         switch (this._platformSdk && this._platformSdk.deviceInfo.type) {
@@ -117,18 +125,6 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
-    get isGetCatalogSupported() {
-        return true
-    }
-
-    get isGetPurchasesSupported() {
-        return true
-    }
-
-    get isConsumePurchaseSupported() {
-        return true
-    }
-
     // config
     get isRemoteConfigSupported() {
         return true
@@ -138,9 +134,9 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
     #yandexPlayer = null
 
-    #leaderboards = null
+    #yandexLeaderboards = null
 
-    #payments = null
+    #yandexPayments = null
 
     initialize() {
         if (this._isInitialized) {
@@ -187,12 +183,12 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
                                     const getLeaderboardsPromise = this._platformSdk.getLeaderboards()
                                         .then((leaderboards) => {
-                                            this.#leaderboards = leaderboards
+                                            this.#yandexLeaderboards = leaderboards
                                         })
 
                                     const getPaymentsPromise = this._platformSdk.getPayments()
                                         .then((payments) => {
-                                            this.#payments = payments
+                                            this.#yandexPayments = payments
                                         })
 
                                     this._isBannerSupported = true
@@ -248,6 +244,30 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return new Promise((resolve) => {
             const ts = this._platformSdk.serverTime()
             resolve(ts)
+        })
+    }
+
+    getAllGames() {
+        return new Promise((resolve, reject) => {
+            this._platformSdk.features.GamesAPI.getAllGames()
+                .then(({ games }) => {
+                    resolve(games)
+                })
+                .catch(reject)
+        })
+    }
+
+    getGameById(options) {
+        if (!options?.gameId) {
+            return Promise.reject(new Error('Provide gameId'))
+        }
+
+        return new Promise((resolve, reject) => {
+            this._platformSdk.features.GamesAPI.getGameByID(options?.gameId)
+                .then(({ game, isAvailable }) => {
+                    resolve({ ...game, isAvailable })
+                })
+                .catch(reject)
         })
     }
 
@@ -528,7 +548,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             return Promise.reject()
         }
 
-        if (!this.#leaderboards || !options || !options.score || !options.leaderboardName) {
+        if (!this.#yandexLeaderboards || !options || !options.score || !options.leaderboardName) {
             return Promise.reject()
         }
 
@@ -536,7 +556,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
 
-            this.#leaderboards.setLeaderboardScore(
+            this.#yandexLeaderboards.setLeaderboardScore(
                 options.leaderboardName,
                 typeof options.score === 'string'
                     ? parseInt(options.score, 10)
@@ -558,7 +578,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             return Promise.reject()
         }
 
-        if (!this.#leaderboards || !options || !options.leaderboardName) {
+        if (!this.#yandexLeaderboards || !options || !options.leaderboardName) {
             return Promise.reject()
         }
 
@@ -566,7 +586,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_SCORE)
 
-            this.#leaderboards.getLeaderboardPlayerEntry(options.leaderboardName)
+            this.#yandexLeaderboards.getLeaderboardPlayerEntry(options.leaderboardName)
                 .then((result) => {
                     this._resolvePromiseDecorator(ACTION_NAME.GET_LEADERBOARD_SCORE, result.score)
                 })
@@ -579,7 +599,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
     }
 
     getLeaderboardEntries(options) {
-        if (!this.#leaderboards || !options || !options.leaderboardName) {
+        if (!this.#yandexLeaderboards || !options || !options.leaderboardName) {
             return Promise.reject()
         }
 
@@ -607,7 +627,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                 parameters.quantityTop = 5
             }
 
-            this.#leaderboards.getLeaderboardEntries(options.leaderboardName, parameters)
+            this.#yandexLeaderboards.getLeaderboardEntries(options.leaderboardName, parameters)
                 .then((result) => {
                     let entries = null
 
@@ -632,8 +652,9 @@ class YandexPlatformBridge extends PlatformBridgeBase {
     }
 
     // payments
-    purchase(options) {
-        if (!this.#payments || !options.id) {
+    paymentsPurchase(id) {
+        const product = this._paymentsGetProductPlatformData(id)
+        if (!this.#yandexPayments || !product) {
             return Promise.reject()
         }
 
@@ -641,9 +662,11 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.PURCHASE)
 
-            this.#payments.purchase(options)
-                .then((result) => {
-                    this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, result)
+            this.#yandexPayments.purchase(product)
+                .then((purchase) => {
+                    const mergedPurchase = { commonId: id, ...purchase.purchaseData }
+                    this._paymentsPurchases.push(mergedPurchase)
+                    this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
                 })
                 .catch((error) => {
                     this._rejectPromiseDecorator(ACTION_NAME.PURCHASE, error)
@@ -653,55 +676,62 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return promiseDecorator.promise
     }
 
-    getPaymentsPurchases() {
-        if (!this.#payments) {
+    paymentsConsumePurchase(id) {
+        if (!this.#yandexPayments) {
             return Promise.reject()
         }
 
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.GET_PURCHASES)
+        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.commonId === id)
+        if (purchaseIndex < 0) {
+            return Promise.reject()
+        }
+
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE)
         if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_PURCHASES)
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE)
 
-            this.#payments.getPurchases()
+            this.#yandexPayments.consumePurchase(this._paymentsPurchases[purchaseIndex].purchaseToken)
                 .then((result) => {
-                    const purchases = result.map((i) => ({
-                        developerPayload: i.developerPayload,
-                        productID: i.productID,
-                        purchaseToken: i.purchaseToken,
-                    }))
-
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_PURCHASES, purchases)
+                    this._paymentsPurchases.splice(purchaseIndex, 1)
+                    this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, result)
                 })
                 .catch((error) => {
-                    this._rejectPromiseDecorator(ACTION_NAME.GET_PURCHASES, error)
+                    this._rejectPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, error)
                 })
         }
 
         return promiseDecorator.promise
     }
 
-    getPaymentsCatalog() {
-        if (!this.#payments) {
+    paymentsGetCatalog() {
+        if (!this.#yandexPayments) {
             return Promise.reject()
         }
 
+        const products = this._paymentsGetProductsPlatformData()
         let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.GET_CATALOG)
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_CATALOG)
 
-            this.#payments.getCatalog()
-                .then((result) => {
-                    const catalog = result.map((i) => ({
-                        id: i.id,
-                        description: i.description,
-                        imageURI: i.imageURI,
-                        price: i.price,
-                        priceCurrencyCode: i.priceCurrencyCode,
-                        priceValue: i.priceValue,
-                        priceCurrencyImage: i.getPriceCurrencyImage('medium'),
-                        title: i.title,
-                    }))
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_CATALOG, catalog)
+            this.#yandexPayments.getCatalog()
+                .then((yandexProducts) => {
+                    const mergedProducts = products.map((product) => {
+                        const yandexProduct = yandexProducts.find((p) => p.id === product.id)
+
+                        return {
+                            commonId: product.commonId,
+                            id: yandexProduct.id,
+                            title: yandexProduct.title,
+                            description: yandexProduct.description,
+                            imageURI: yandexProduct.imageURI,
+                            price: yandexProduct.price,
+                            priceCurrencyCode: yandexProduct.priceCurrencyCode,
+                            priceValue: yandexProduct.priceValue,
+                            priceCurrencyImage: yandexProduct.getPriceCurrencyImage?.('medium'),
+                        }
+                    })
+
+                    this._resolvePromiseDecorator(ACTION_NAME.GET_CATALOG, mergedProducts)
                 })
                 .catch((error) => {
                     this._rejectPromiseDecorator(ACTION_NAME.GET_CATALOG, error)
@@ -711,23 +741,34 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return promiseDecorator.promise
     }
 
-    consumePurchase(options) {
-        if (!this.#payments || !options.purchaseToken) {
+    paymentsGetPurchases() {
+        if (!this.#yandexPayments) {
             return Promise.reject()
         }
 
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE)
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.GET_PURCHASES)
         if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE)
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_PURCHASES)
 
-            this.#payments.consumePurchase(options.purchaseToken)
-                .then((result) => {
-                    this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, result)
+            this.#yandexPayments.getPurchases()
+                .then((purchases) => {
+                    const products = this._paymentsGetProductsPlatformData()
+
+                    this._paymentsPurchases = purchases.map((purchase) => {
+                        const product = products.find((p) => p.id === purchase.productID)
+                        return {
+                            commonId: product.commonId,
+                            ...purchase.purchaseData,
+                        }
+                    })
+
+                    this._resolvePromiseDecorator(ACTION_NAME.GET_PURCHASES, this._paymentsPurchases)
                 })
                 .catch((error) => {
-                    this._rejectPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, error)
+                    this._rejectPromiseDecorator(ACTION_NAME.GET_PURCHASES, error)
                 })
         }
+
         return promiseDecorator.promise
     }
 
