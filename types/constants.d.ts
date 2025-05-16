@@ -10,8 +10,13 @@ export declare const PLATFORM_ID: {
     WORTAL: 'wortal',
     PLAYDECK: 'playdeck',
     TELEGRAM: 'telegram',
+    Y8: 'y8',
+    LAGGED: 'lagged',
+    FACEBOOK: 'facebook',
     POKI: 'poki',
     MOCK: 'mock',
+    QA_TOOL: 'qa_tool',
+    MSN: 'msn',
 }
 
 export declare const MODULE_NAME: {
