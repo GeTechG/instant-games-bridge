@@ -1,7 +1,7 @@
-export default ModuleBase;
+export default ModuleBase
 declare class ModuleBase {
     constructor(platformBridge: any);
-    _platformBridge: any;
-    initialize(): Promise<void>;
+
+    _platformBridge: any
 }
-//# sourceMappingURL=ModuleBase.d.ts.map
+// # sourceMappingURL=ModuleBase.d.ts.map

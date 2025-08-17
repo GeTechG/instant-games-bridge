@@ -1,10 +1,15 @@
-export default VkPlayPlatformBridge;
+import PlatformBridgeBase from './PlatformBridgeBase'
+
+export default VkPlayPlatformBridge
 declare class VkPlayPlatformBridge extends PlatformBridgeBase {
     initialize(): any;
+
     authorizePlayer(): any;
+
     getPaymentsCatalog(): any;
+
     purchase(options: any): any;
-    #private;
+
+    #private
 }
-import PlatformBridgeBase from './PlatformBridgeBase';
-//# sourceMappingURL=VkPlayPlatformBridge.d.ts.map
+// # sourceMappingURL=VkPlayPlatformBridge.d.ts.map

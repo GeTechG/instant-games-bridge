@@ -20,23 +20,33 @@ declare class AdvertisementModule extends ModuleBase {
 
     get bannerState(): BannerState
 
+    get isInterstitialSupported(): boolean
+
     get interstitialState(): InterstitialState
+
+    get isRewardedSupported(): boolean
+
+    get rewardedPlacement(): string | null
 
     get rewardedState(): RewardState
 
     get minimumDelayBetweenInterstitial(): number
 
-    setMinimumDelayBetweenInterstitial(options: any): void
+    setMinimumDelayBetweenInterstitial(options: number | string): void
 
     constructor(platformBridge: any)
 
-    showBanner(options?: BannerOptions): void
+    showBanner(position?: 'top' | 'bottom', placement?: string | null): void
 
     hideBanner(): void
 
-    showInterstitial(options?: any): void
+    preloadInterstitial(placement?: string | null): void
 
-    showRewarded(options?: any): void
+    showInterstitial(placement?: string | null): void
+
+    preloadRewarded(placement?: string | null): void
+
+    showRewarded(placement?: string | null): void
 
     checkAdBlock(): Promise<boolean>
 }

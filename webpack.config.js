@@ -10,7 +10,7 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         library: {
             type: 'umd',
-        }
+        },
     },
     module: {
         rules: [

@@ -1,116 +1,135 @@
 export declare const PLATFORM_ID: {
-    VK: 'vk',
-    VK_PLAY: 'vk_play',
-    OK: 'ok',
-    YANDEX: 'yandex',
-    CRAZY_GAMES: 'crazy_games',
-    ABSOLUTE_GAMES: 'absolute_games',
-    GAME_DISTRIBUTION: 'game_distribution',
-    PLAYGAMA: 'playgama',
-    WORTAL: 'wortal',
-    PLAYDECK: 'playdeck',
-    TELEGRAM: 'telegram',
-    Y8: 'y8',
-    LAGGED: 'lagged',
-    FACEBOOK: 'facebook',
-    POKI: 'poki',
-    MOCK: 'mock',
-    QA_TOOL: 'qa_tool',
-    MSN: 'msn',
+	VK: 'vk';
+	VK_PLAY: 'vk_play';
+	OK: 'ok';
+	YANDEX: 'yandex';
+	CRAZY_GAMES: 'crazy_games';
+	ABSOLUTE_GAMES: 'absolute_games';
+	GAME_DISTRIBUTION: 'game_distribution';
+	PLAYGAMA: 'playgama';
+	WORTAL: 'wortal';
+	PLAYDECK: 'playdeck';
+	TELEGRAM: 'telegram';
+	Y8: 'y8';
+	LAGGED: 'lagged';
+	FACEBOOK: 'facebook';
+	POKI: 'poki';
+	MOCK: 'mock';
+	QA_TOOL: 'qa_tool';
+	MSN: 'msn';
+	BITQUEST: 'bitquest';
+	GAMEPUSH: 'gamepush';
+	DISCORD: 'discord';
+	YOUTUBE: 'youtube';
 }
 
 export declare const MODULE_NAME: {
-    PLATFORM: 'platform',
-    PLAYER: 'player',
-    GAME: 'game',
-    STORAGE: 'storage',
-    ADVERTISEMENT: 'advertisement',
-    SOCIAL: 'social',
-    DEVICE: 'device',
-    LEADERBOARD: 'leaderboard',
-    PAYMENTS: 'payments',
-    REMOTE_CONFIG: 'remote_config',
-    CLIPBOARD: 'clipboard',
+	PLATFORM: 'platform';
+	PLAYER: 'player';
+	GAME: 'game';
+	STORAGE: 'storage';
+	ADVERTISEMENT: 'advertisement';
+	SOCIAL: 'social';
+	DEVICE: 'device';
+	LEADERBOARDS: 'leaderboards';
+	PAYMENTS: 'payments';
+	REMOTE_CONFIG: 'remote_config';
+	CLIPBOARD: 'clipboard';
+	ACHIEVEMENTS: 'achievements';
 }
 
 export declare const EVENT_NAME: {
-    INTERSTITIAL_STATE_CHANGED: 'interstitial_state_changed',
-    REWARDED_STATE_CHANGED: 'rewarded_state_changed',
-    BANNER_STATE_CHANGED: 'banner_state_changed',
-    VISIBILITY_STATE_CHANGED: 'visibility_state_changed',
+	INTERSTITIAL_STATE_CHANGED: 'interstitial_state_changed';
+	REWARDED_STATE_CHANGED: 'rewarded_state_changed';
+	BANNER_STATE_CHANGED: 'banner_state_changed';
+	VISIBILITY_STATE_CHANGED: 'visibility_state_changed';
+	AUDIO_STATE_CHANGED: 'audio_state_changed';
+	PAUSE_STATE_CHANGED: 'pause_state_changed';
 }
 
 export declare const VISIBILITY_STATE: {
-    VISIBLE: 'visible',
-    HIDDEN: 'hidden',
+	VISIBLE: 'visible';
+	HIDDEN: 'hidden';
 }
 
 export declare const INTERSTITIAL_STATE: {
-    LOADING: 'loading',
-    OPENED: 'opened',
-    CLOSED: 'closed',
-    FAILED: 'failed',
+	LOADING: 'loading';
+	OPENED: 'opened';
+	CLOSED: 'closed';
+	FAILED: 'failed';
 }
 
 export declare const REWARDED_STATE: {
-    LOADING: 'loading',
-    OPENED: 'opened',
-    CLOSED: 'closed',
-    FAILED: 'failed',
-    REWARDED: 'rewarded',
+	LOADING: 'loading';
+	OPENED: 'opened';
+	CLOSED: 'closed';
+	FAILED: 'failed';
+	REWARDED: 'rewarded';
 }
 
 export declare const BANNER_STATE: {
-    LOADING: 'loading',
-    SHOWN: 'shown',
-    HIDDEN: 'hidden',
-    FAILED: 'failed',
+	LOADING: 'loading';
+	SHOWN: 'shown';
+	HIDDEN: 'hidden';
+	FAILED: 'failed';
 }
 
+export declare const BANNER_POSITION = {
+    TOP: 'top',
+    BOTTOM: 'bottom',
+}
+
+export declare const BANNER_CONTAINER_ID = 'banner-container'
+
 export declare const STORAGE_TYPE: {
-    LOCAL_STORAGE: 'local_storage',
-    PLATFORM_INTERNAL: 'platform_internal',
+	LOCAL_STORAGE: 'local_storage';
+	PLATFORM_INTERNAL: 'platform_internal';
 }
 
 export declare const DEVICE_TYPE: {
-    DESKTOP: 'desktop',
-    MOBILE: 'mobile',
-    TABLET: 'tablet',
-    TV: 'tv',
+	DESKTOP: 'desktop';
+	MOBILE: 'mobile';
+	TABLET: 'tablet';
+	TV: 'tv';
 }
 
 export declare const PLATFORM_MESSAGE: {
-    GAME_READY: 'game_ready',
-    IN_GAME_LOADING_STARTED: 'in_game_loading_started',
-    IN_GAME_LOADING_STOPPED: 'in_game_loading_stopped',
-    GAMEPLAY_STARTED: 'gameplay_started',
-    GAMEPLAY_STOPPED: 'gameplay_stopped',
-    PLAYER_GOT_ACHIEVEMENT: 'player_got_achievement',
-    GAME_OVER: 'game_over',
+	GAME_READY: 'game_ready';
+	IN_GAME_LOADING_STARTED: 'in_game_loading_started';
+	IN_GAME_LOADING_STOPPED: 'in_game_loading_stopped';
+	GAMEPLAY_STARTED: 'gameplay_started';
+	GAMEPLAY_STOPPED: 'gameplay_stopped';
+	PLAYER_GOT_ACHIEVEMENT: 'player_got_achievement';
+	GAME_OVER: 'game_over';
+}
+
+export declare const LEADERBOARD_TYPE = {
+    NOT_AVAILABLE: 'not_available',
+    IN_GAME: 'in_game',
+    NATIVE: 'native',
 }
 
 export declare const ACTION_NAME: {
-    INITIALIZE: 'initialize',
-    AUTHORIZE_PLAYER: 'authorize_player',
-    SHARE: 'share',
-    INVITE_FRIENDS: 'invite_friends',
-    JOIN_COMMUNITY: 'join_community',
-    CREATE_POST: 'create_post',
-    ADD_TO_HOME_SCREEN: 'add_to_home_screen',
-    ADD_TO_FAVORITES: 'add_to_favorites',
-    RATE: 'rate',
-    SET_LEADERBOARD_SCORE: 'set_leaderboard_score',
-    GET_LEADERBOARD_SCORE: 'get_leaderboard_score',
-    GET_LEADERBOARD_ENTRIES: 'get_leaderboard_entries',
-    GET_PURCHASES: 'get_purchases',
-    GET_CATALOG: 'get_catalog',
-    PURCHASE: 'purchase',
-    CONSUME_PURCHASE: 'consume_purchase',
-    GET_REMOTE_CONFIG: 'get_remote_config',
-    GET_STORAGE_DATA: 'get_storage_data',
-    SHOW_LEADERBOARD_NATIVE_POPUP: 'show_leaderboard_native_popup',
-    CLIPBOARD_WRITE: 'clipboard_write',
-    ADBLOCK_DETECT: 'adblock_detect',
+	INITIALIZE: 'initialize';
+	AUTHORIZE_PLAYER: 'authorize_player';
+	SHARE: 'share';
+	INVITE_FRIENDS: 'invite_friends';
+	JOIN_COMMUNITY: 'join_community';
+	CREATE_POST: 'create_post';
+	ADD_TO_HOME_SCREEN: 'add_to_home_screen';
+	ADD_TO_FAVORITES: 'add_to_favorites';
+	RATE: 'rate';
+	LEADERBOARDS_SET_SCORE: 'leaderboards_set_score';
+	LEADERBOARDS_GET_ENTRIES: 'leaderboards_get_entries';
+	GET_PURCHASES: 'get_purchases';
+	GET_CATALOG: 'get_catalog';
+	PURCHASE: 'purchase';
+	CONSUME_PURCHASE: 'consume_purchase';
+	GET_REMOTE_CONFIG: 'get_remote_config';
+	GET_STORAGE_DATA: 'get_storage_data';
+	SHOW_LEADERBOARD_NATIVE_POPUP: 'show_leaderboard_native_popup';
+	CLIPBOARD_WRITE: 'clipboard_write';
+	ADBLOCK_DETECT: 'adblock_detect';
 }
 
 export declare const ERROR: {
@@ -118,7 +137,11 @@ export declare const ERROR: {
     STORAGE_NOT_SUPPORTED: { message: 'Storage not supported' },
     STORAGE_NOT_AVAILABLE: { message: 'Storage not available' },
     GAME_DISTRIBUTION_GAME_ID_IS_UNDEFINED: { message: 'GameDistribution Game ID is undefined' },
-    VK_PLAY_GAME_ID_IS_UNDEFINED: { message: 'VK Play Game ID is undefined' },
+    Y8_GAME_PARAMS_NOT_FOUND: { message: 'Y8 Game params are not found' },
     OK_GAME_PARAMS_NOT_FOUND: { message: 'OK Game params are not found' },
+    LAGGED_GAME_PARAMS_NOT_FOUND: { message: 'Lagged Game params are not found' },
+    GAMEPUSH_GAME_PARAMS_NOT_FOUND: { message: 'GamePush Game params are not found' },
+    FACEBOOK_PLACEMENT_ID_IS_UNDEFINED: { message: 'Facebook Placement ID is undefined' },
     INVITE_FRIENDS_MESSAGE_LENGTH_ERROR: { message: 'Message is too long' },
+    DISCORD_GAME_PARAMS_NOT_FOUND: { message: 'Discord Game params are not found' },
 }

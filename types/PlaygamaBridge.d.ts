@@ -5,7 +5,7 @@ import StorageModule from './modules/StorageModule'
 import AdvertisementModule from './modules/AdvertisementModule'
 import SocialModule from './modules/SocialModule'
 import DeviceModule from './modules/DeviceModule'
-import LeaderboardModule from './modules/LeaderboardModule'
+import LeaderboardModule from './modules/LeaderboardsModule'
 import PaymentsModule from './modules/PaymentsModule'
 import RemoteConfigModule from './modules/RemoteConfigModule'
 import ClipboardModule from './modules/ClipboardModule'
@@ -69,16 +69,18 @@ export default class PlaygamaBridge {
 
     get DEVICE_TYPE(): typeof DEVICE_TYPE;
 
-    initialize(options?: Partial<{
-        forciblySetPlatformId: typeof PLATFORM_ID[keyof typeof PLATFORM_ID],
+    initialize(
+		options?: Partial<{
+			forciblySetPlatformId: (typeof PLATFORM_ID)[keyof typeof PLATFORM_ID];
 
-        platforms: Partial<{
-            'game_distribution': {
-                gameId: string
-            },
-            'vk_play': {
-                gameId: string
-            }
-        }>
-    }>): Promise<void>;
+			platforms: Partial<{
+				game_distribution: {
+					gameId: string;
+				};
+				vk_play: {
+					gameId: string;
+				};
+			}>;
+		}>,
+	): Promise<void>;
 }

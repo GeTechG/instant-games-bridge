@@ -1,6 +1,7 @@
-export default PlaygamaPlatformBridge;
+import PlatformBridgeBase from './PlatformBridgeBase'
+
+export default PlaygamaPlatformBridge
 declare class PlaygamaPlatformBridge extends PlatformBridgeBase {
     initialize(): any;
 }
-import PlatformBridgeBase from './PlatformBridgeBase';
-//# sourceMappingURL=PlaygamaPlatformBridge.d.ts.map
+// # sourceMappingURL=PlaygamaPlatformBridge.d.ts.map

@@ -1,8 +1,11 @@
-export default GameDistributionPlatformBridge;
+import PlatformBridgeBase from './PlatformBridgeBase'
+
+export default GameDistributionPlatformBridge
 declare class GameDistributionPlatformBridge extends PlatformBridgeBase {
     initialize(): any;
+
     showBanner(options: any): void;
-    #private;
+
+    #private
 }
-import PlatformBridgeBase from './PlatformBridgeBase';
-//# sourceMappingURL=GameDistributionPlatformBridge.d.ts.map
+// # sourceMappingURL=GameDistributionPlatformBridge.d.ts.map
