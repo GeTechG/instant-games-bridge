@@ -32,12 +32,13 @@
         "@babel/core": "^7.17.8",
         "@babel/preset-env": "^7.16.11",
         "@types/eslint__js": "^8.42.3",
+        "@typescript-eslint/eslint-plugin": "^8.39.1",
         "babel-loader": "^8.2.3",
         "eslint": "^8.55.0",
         "eslint-config-airbnb": "^19.0.4",
         "eslint-webpack-plugin": "^4.2.0",
         "typescript": "^5.5.4",
-        "webpack-cli": "^6.0.1",
-        "webpack": "^5.98.0"
+        "webpack": "^5.98.0",
+        "webpack-cli": "^6.0.1"
     }
 }
