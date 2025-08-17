@@ -26,6 +26,7 @@ import {
     DEVICE_TYPE,
     BANNER_STATE,
     PLATFORM_MESSAGE,
+    LEADERBOARD_TYPE,
 } from '../constants'
 
 const SDK_URL = '/sdk.js'
@@ -57,6 +58,15 @@ class YandexPlatformBridge extends PlatformBridgeBase {
     }
 
     get isPlatformGetGameByIdSupported() {
+        return true
+    }
+
+    // advertisement
+    get isInterstitialSupported() {
+        return true
+    }
+
+    get isRewardedSupported() {
         return true
     }
 
@@ -99,25 +109,9 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return false
     }
 
-    // leaderboard
-    get isLeaderboardSupported() {
-        return true
-    }
-
-    get isLeaderboardMultipleBoardsSupported() {
-        return true
-    }
-
-    get isLeaderboardSetScoreSupported() {
-        return true
-    }
-
-    get isLeaderboardGetScoreSupported() {
-        return true
-    }
-
-    get isLeaderboardGetEntriesSupported() {
-        return true
+    // leaderboards
+    get leaderboardsType() {
+        return LEADERBOARD_TYPE.IN_GAME
     }
 
     // payments
@@ -134,9 +128,9 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
     #yandexPlayer = null
 
-    #yandexLeaderboards = null
-
     #yandexPayments = null
+
+    #playerPromise = null
 
     initialize() {
         if (this._isInitialized) {
@@ -155,7 +149,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                                 .then((sdk) => {
                                     this._platformSdk = sdk
 
-                                    const getPlayerPromise = this.#getPlayer()
+                                    this.#playerPromise = this.#getPlayer()
 
                                     const reportPluginEnginePromise = this._platformSdk
                                         .features
@@ -181,11 +175,6 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                                         checkAddToHomeScreenSupportedTimeoutPromise,
                                     ])
 
-                                    const getLeaderboardsPromise = this._platformSdk.getLeaderboards()
-                                        .then((leaderboards) => {
-                                            this.#yandexLeaderboards = leaderboards
-                                        })
-
                                     const getPaymentsPromise = this._platformSdk.getPayments()
                                         .then((payments) => {
                                             this.#yandexPayments = payments
@@ -200,10 +189,8 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                                         })
 
                                     Promise.all([
-                                        getPlayerPromise,
                                         reportPluginEnginePromise,
                                         checkAddToHomeScreenSupportedRacePromise,
-                                        getLeaderboardsPromise,
                                         getPaymentsPromise,
                                         getBannerStatePromise,
                                     ])
@@ -278,17 +265,18 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.AUTHORIZE_PLAYER)
 
             if (this._isPlayerAuthorized) {
-                this.#getPlayer(options)
-                    .then(() => {
-                        this._resolvePromiseDecorator(ACTION_NAME.AUTHORIZE_PLAYER)
-                    })
+                this.#playerPromise = this.#getPlayer(options)
+
+                this.#playerPromise.then(() => {
+                    this._resolvePromiseDecorator(ACTION_NAME.AUTHORIZE_PLAYER)
+                })
             } else {
                 this._platformSdk.auth.openAuthDialog()
                     .then(() => {
-                        this.#getPlayer(options)
-                            .then(() => {
-                                this._resolvePromiseDecorator(ACTION_NAME.AUTHORIZE_PLAYER)
-                            })
+                        this.#playerPromise = this.#getPlayer(options)
+                        this.#playerPromise.then(() => {
+                            this._resolvePromiseDecorator(ACTION_NAME.AUTHORIZE_PLAYER)
+                        })
                     })
                     .catch((error) => {
                         this._rejectPromiseDecorator(ACTION_NAME.AUTHORIZE_PLAYER, error)
@@ -322,7 +310,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                 return Promise.reject()
             }
 
-            return new Promise((resolve) => {
+            return this.#playerPromise.then(() => new Promise((resolve) => {
                 if (Array.isArray(key)) {
                     const values = []
 
@@ -339,7 +327,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                 }
 
                 resolve(typeof this._platformStorageCachedData[key] === 'undefined' ? null : this._platformStorageCachedData[key])
-            })
+            }))
         }
 
         return super.getDataFromStorage(key, storageType, tryParseJson)
@@ -351,7 +339,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                 return Promise.reject()
             }
 
-            return new Promise((resolve, reject) => {
+            return this.#playerPromise.then(() => new Promise((resolve, reject) => {
                 const data = this._platformStorageCachedData !== null
                     ? { ...this._platformStorageCachedData }
                     : {}
@@ -372,7 +360,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                     .catch((error) => {
                         reject(error)
                     })
-            })
+            }))
         }
 
         return super.setDataToStorage(key, value, storageType)
@@ -384,7 +372,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                 return Promise.reject()
             }
 
-            return new Promise((resolve, reject) => {
+            return this.#playerPromise.then(() => new Promise((resolve, reject) => {
                 const data = this._platformStorageCachedData !== null
                     ? { ...this._platformStorageCachedData }
                     : {}
@@ -405,7 +393,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                     .catch((error) => {
                         reject(error)
                     })
-            })
+            }))
         }
 
         return super.deleteDataFromStorage(key, storageType)
@@ -542,109 +530,62 @@ class YandexPlatformBridge extends PlatformBridgeBase {
         return promiseDecorator.promise
     }
 
-    // leaderboard
-    setLeaderboardScore(options) {
+    // leaderboards
+    leaderboardsSetScore(id, score) {
         if (!this._isPlayerAuthorized) {
             return Promise.reject()
         }
 
-        if (!this.#yandexLeaderboards || !options || !options.score || !options.leaderboardName) {
-            return Promise.reject()
-        }
-
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
         if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
 
-            this.#yandexLeaderboards.setLeaderboardScore(
-                options.leaderboardName,
-                typeof options.score === 'string'
-                    ? parseInt(options.score, 10)
-                    : options.score,
-            )
+            this._platformSdk.leaderboards.setScore(id, score)
                 .then(() => {
-                    this._resolvePromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
+                    this._resolvePromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
                 })
                 .catch((error) => {
-                    this._rejectPromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE, error)
+                    this._rejectPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE, error)
                 })
         }
 
         return promiseDecorator.promise
     }
 
-    getLeaderboardScore(options) {
-        if (!this._isPlayerAuthorized) {
-            return Promise.reject()
-        }
-
-        if (!this.#yandexLeaderboards || !options || !options.leaderboardName) {
-            return Promise.reject()
-        }
-
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_SCORE)
+    leaderboardsGetEntries(id) {
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES)
         if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_SCORE)
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES)
 
-            this.#yandexLeaderboards.getLeaderboardPlayerEntry(options.leaderboardName)
-                .then((result) => {
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_LEADERBOARD_SCORE, result.score)
-                })
-                .catch((error) => {
-                    this._rejectPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_SCORE, error)
-                })
-        }
-
-        return promiseDecorator.promise
-    }
-
-    getLeaderboardEntries(options) {
-        if (!this.#yandexLeaderboards || !options || !options.leaderboardName) {
-            return Promise.reject()
-        }
-
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES)
-        if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES)
-
-            const parameters = {}
-
-            parameters.includeUser = typeof options.includeUser === 'boolean' ? options.includeUser : false
-
-            parameters.quantityAround = typeof options.quantityAround === 'string'
-                ? parseInt(options.quantityAround, 10)
-                : options.quantityAround
-
-            if (Number.isNaN(parameters.quantityAround)) {
-                parameters.quantityAround = 5
+            const options = {
+                quantityTop: 20,
             }
 
-            parameters.quantityTop = typeof options.quantityTop === 'string'
-                ? parseInt(options.quantityTop, 10)
-                : options.quantityTop
-
-            if (Number.isNaN(parameters.quantityTop)) {
-                parameters.quantityTop = 5
+            if (this._isPlayerAuthorized) {
+                options.includeUser = true
+                options.quantityAround = 3
             }
 
-            this.#yandexLeaderboards.getLeaderboardEntries(options.leaderboardName, parameters)
+            this._platformSdk.leaderboards.getEntries(id, options)
                 .then((result) => {
-                    let entries = null
+                    let entries
 
                     if (result && result.entries.length > 0) {
                         entries = result.entries.map((e) => ({
                             id: e.player.uniqueID,
+                            name: e.player.publicName,
                             score: e.score,
                             rank: e.rank,
-                            name: e.player.publicName,
                             photo: e.player.getAvatarSrc('large'),
                         }))
+                    } else {
+                        entries = []
                     }
 
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES, entries)
+                    this._resolvePromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES, entries)
                 })
                 .catch((error) => {
-                    this._rejectPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES, error)
+                    this._rejectPromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES, error)
                 })
         }
 
@@ -653,9 +594,13 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
     // payments
     paymentsPurchase(id) {
-        const product = this._paymentsGetProductPlatformData(id)
-        if (!this.#yandexPayments || !product) {
+        if (!this.#yandexPayments) {
             return Promise.reject()
+        }
+
+        let product = this._paymentsGetProductPlatformData(id)
+        if (!product) {
+            product = { id }
         }
 
         let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.PURCHASE)
@@ -664,7 +609,9 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
             this.#yandexPayments.purchase(product)
                 .then((purchase) => {
-                    const mergedPurchase = { commonId: id, ...purchase.purchaseData }
+                    const mergedPurchase = { id, ...purchase.purchaseData }
+                    delete mergedPurchase.productID
+
                     this._paymentsPurchases.push(mergedPurchase)
                     this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
                 })
@@ -681,7 +628,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             return Promise.reject()
         }
 
-        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.commonId === id)
+        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.id === id)
         if (purchaseIndex < 0) {
             return Promise.reject()
         }
@@ -691,9 +638,9 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE)
 
             this.#yandexPayments.consumePurchase(this._paymentsPurchases[purchaseIndex].purchaseToken)
-                .then((result) => {
+                .then(() => {
                     this._paymentsPurchases.splice(purchaseIndex, 1)
-                    this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, result)
+                    this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, { id })
                 })
                 .catch((error) => {
                     this._rejectPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, error)
@@ -719,8 +666,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
                         const yandexProduct = yandexProducts.find((p) => p.id === product.id)
 
                         return {
-                            commonId: product.commonId,
-                            id: yandexProduct.id,
+                            id: product.id,
                             title: yandexProduct.title,
                             description: yandexProduct.description,
                             imageURI: yandexProduct.imageURI,
@@ -756,10 +702,13 @@ class YandexPlatformBridge extends PlatformBridgeBase {
 
                     this._paymentsPurchases = purchases.map((purchase) => {
                         const product = products.find((p) => p.id === purchase.productID)
-                        return {
-                            commonId: product.commonId,
+                        const mergedPurchase = {
+                            id: product.id,
                             ...purchase.purchaseData,
                         }
+
+                        delete mergedPurchase.productID
+                        return mergedPurchase
                     })
 
                     this._resolvePromiseDecorator(ACTION_NAME.GET_PURCHASES, this._paymentsPurchases)
@@ -834,7 +783,7 @@ class YandexPlatformBridge extends PlatformBridgeBase {
             this._platformSdk.getPlayer(parameters)
                 .then((player) => {
                     this._playerId = player.getUniqueID()
-                    this._isPlayerAuthorized = player.getMode() !== 'lite'
+                    this._isPlayerAuthorized = player.isAuthorized()
 
                     this._defaultStorageType = this._isPlayerAuthorized
                         ? STORAGE_TYPE.PLATFORM_INTERNAL

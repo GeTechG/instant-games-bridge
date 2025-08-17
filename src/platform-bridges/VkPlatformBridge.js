@@ -75,6 +75,15 @@ class VkPlatformBridge extends PlatformBridgeBase {
         return super.platformPayload
     }
 
+    // advertisement
+    get isInterstitialSupported() {
+        return true
+    }
+
+    get isRewardedSupported() {
+        return true
+    }
+
     // device
     get deviceType() {
         switch (this.#platform) {
@@ -122,14 +131,7 @@ class VkPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
-    // leaderboard
-    get isLeaderboardSupported() {
-        return this.deviceType === DEVICE_TYPE.MOBILE
-    }
-
-    get isLeaderboardNativePopupSupported() {
-        return this.deviceType === DEVICE_TYPE.MOBILE
-    }
+    _isBannerSupported = true
 
     #platform
 
@@ -153,7 +155,6 @@ class VkPlatformBridge extends PlatformBridgeBase {
                     this._platformSdk
                         .send('VKWebAppInit')
                         .then(() => {
-                            this._isBannerSupported = true
                             this._platformSdk.send('VKWebAppGetUserInfo')
                                 .then((data) => {
                                     if (data) {
@@ -336,27 +337,9 @@ class VkPlatformBridge extends PlatformBridgeBase {
     }
 
     // advertisement
-    showBanner(options) {
-        let position = 'bottom'
-        let layoutType = 'resize'
-        let canClose = false
-
-        if (options) {
-            if (typeof options.position === 'string') {
-                position = options.position
-            }
-
-            if (typeof options.layoutType === 'string') {
-                layoutType = options.layoutType
-            }
-
-            if (typeof options.canClose === 'boolean') {
-                canClose = options.canClose
-            }
-        }
-
+    showBanner(position) {
         this._platformSdk
-            .send('VKWebAppShowBannerAd', { banner_location: position, layout_type: layoutType, can_close: canClose })
+            .send('VKWebAppShowBannerAd', { banner_location: position })
             .then((data) => {
                 if (data.result) {
                     this._setBannerState(BANNER_STATE.SHOWN)
@@ -468,24 +451,6 @@ class VkPlatformBridge extends PlatformBridgeBase {
 
     addToFavorites() {
         return this.#sendRequestToVKBridge(ACTION_NAME.ADD_TO_FAVORITES, 'VKWebAppAddToFavorites')
-    }
-
-    // leaderboard
-    showLeaderboardNativePopup(options) {
-        if (!this.isLeaderboardNativePopupSupported) {
-            return Promise.reject()
-        }
-
-        if (!options || !options.userResult) {
-            return Promise.reject()
-        }
-
-        const data = { user_result: options.userResult }
-        if (typeof options.global === 'boolean') {
-            data.global = options.global ? 1 : 0
-        }
-
-        return this.#sendRequestToVKBridge(ACTION_NAME.SHOW_LEADERBOARD_NATIVE_POPUP, 'VKWebAppShowLeaderBoardBox', data)
     }
 
     // clipboard

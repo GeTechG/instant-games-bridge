@@ -15,35 +15,27 @@
             "devId": "",
             "publisherId": ""
         },
-        "facebook": {
-            "bannerPlacementId": "",
-            "interstitialPlacements": [],
-            "rewardedPlacements": []
+        "msn": {
+            "gameId": ""
+        },
+        "discord" : {
+            "appId": ""
+        },
+        "gamepush": {
+            "projectId": "",
+            "publicToken": ""
         }
     },
-    "payments": [
-        {
-            "commonId": "test_product",
-            "yandex": {
-                "id": "test_product"
-            },
-            "facebook": {
-                "productID": "test_product"
-            },
-            "msn": {
-                "productId": "test_product"
-            },
-            "playgama": {
-                "amount": 1
-            },
-            "qa_tool": {
-                "id": "test_product",
-                "amount": 1
-            },
-            "playdeck": {
-                "amount": 1,
-                "description": "TEST PRODUCT"
-            }
-        }
-    ]
+    "advertisement": {
+        "interstitial": {
+            "preloadOnStart": true
+        },
+        "rewarded": {
+            "preloadOnStart": true
+        },
+        "useBuiltInErrorPopup": true,
+        "backfillId": ""
+    },
+    "payments": [],
+    "leaderboards": []
 }

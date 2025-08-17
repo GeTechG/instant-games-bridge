@@ -34,6 +34,15 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
         return PLATFORM_ID.PLAYGAMA
     }
 
+    // advertisement
+    get isInterstitialSupported() {
+        return true
+    }
+
+    get isRewardedSupported() {
+        return true
+    }
+
     // social
     get isExternalLinksAllowed() {
         return false
@@ -47,6 +56,10 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
     // payments
     get isPaymentsSupported() {
         return true
+    }
+
+    get platformLanguage() {
+        return this._platformSdk.platformService.getLanguage()
     }
 
     initialize() {
@@ -268,7 +281,7 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
             this._platformSdk.inGamePaymentsApi.purchase(product)
                 .then((purchase) => {
                     if (purchase.status === 'PAID') {
-                        const mergedPurchase = { commonId: id, ...purchase }
+                        const mergedPurchase = { id, ...purchase }
                         this._paymentsPurchases.push(mergedPurchase)
                         this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
                     } else {
@@ -290,9 +303,9 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
         }
 
         const updatedProducts = products.map((product) => ({
-            commonId: product.commonId,
-            price: `${product.amount} Golden Fennec`,
-            priceCurrencyCode: 'Golden Fennec',
+            id: product.id,
+            price: `${product.amount} Gam`,
+            priceCurrencyCode: 'Gam',
             priceCurrencyImage: 'https://games.playgama.com/assets/gold-fennec-coin-large.webp',
             priceValue: product.amount,
         }))

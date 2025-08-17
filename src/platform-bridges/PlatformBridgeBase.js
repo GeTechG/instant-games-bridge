@@ -26,10 +26,16 @@ import {
     ERROR,
     VISIBILITY_STATE,
     DEVICE_TYPE,
+    LEADERBOARD_TYPE,
 } from '../constants'
 import PromiseDecorator from '../common/PromiseDecorator'
+import { showInfoPopup } from '../common/utils'
 
 class PlatformBridgeBase {
+    get options() {
+        return this._options
+    }
+
     // platform
     get platformId() {
         return PLATFORM_ID.MOCK
@@ -62,6 +68,14 @@ class PlatformBridgeBase {
     }
 
     get isPlatformGetGameByIdSupported() {
+        return false
+    }
+
+    get isPlatformAudioEnabled() {
+        return true
+    }
+
+    get isPlatformPaused() {
         return false
     }
 
@@ -101,16 +115,16 @@ class PlatformBridgeBase {
         return this._isBannerSupported
     }
 
-    get bannerState() {
-        return this._bannerState
+    get isInterstitialSupported() {
+        return false
     }
 
-    get interstitialState() {
-        return this._interstitialState
+    get isMinimumDelayBetweenInterstitialEnabled() {
+        return true
     }
 
-    get rewardedState() {
-        return this._rewardedState
+    get isRewardedSupported() {
+        return false
     }
 
     // social
@@ -162,34 +176,14 @@ class PlatformBridgeBase {
         return DEVICE_TYPE.DESKTOP
     }
 
-    // leaderboard
-    get isLeaderboardSupported() {
-        return false
-    }
-
-    get isLeaderboardNativePopupSupported() {
-        return false
-    }
-
-    get isLeaderboardMultipleBoardsSupported() {
-        return false
-    }
-
-    get isLeaderboardSetScoreSupported() {
-        return false
-    }
-
-    get isLeaderboardGetScoreSupported() {
-        return false
-    }
-
-    get isLeaderboardGetEntriesSupported() {
-        return false
-    }
-
     // payments
     get isPaymentsSupported() {
         return false
+    }
+
+    // leaderboards
+    get leaderboardsType() {
+        return LEADERBOARD_TYPE.NOT_AVAILABLE
     }
 
     // config
@@ -236,12 +230,6 @@ class PlatformBridgeBase {
     _platformStorageCachedData = null
 
     _isBannerSupported = false
-
-    _interstitialState = null
-
-    _rewardedState = null
-
-    _bannerState = null
 
     _paymentsPurchases = []
 
@@ -418,9 +406,13 @@ class PlatformBridgeBase {
         this._setBannerState(BANNER_STATE.HIDDEN)
     }
 
+    preloadInterstitial() { }
+
     showInterstitial() {
         this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
     }
+
+    preloadRewarded() { }
 
     showRewarded() {
         this._setRewardedState(REWARDED_STATE.FAILED)
@@ -490,28 +482,21 @@ class PlatformBridgeBase {
         return Promise.reject()
     }
 
-    // leaderboard
-    setLeaderboardScore() {
+    // leaderboards
+    leaderboardsSetScore() {
         return Promise.reject()
     }
 
-    getLeaderboardScore() {
-        return Promise.reject()
-    }
-
-    getLeaderboardEntries() {
-        return Promise.reject()
-    }
-
-    showLeaderboardNativePopup() {
+    leaderboardsGetEntries() {
         return Promise.reject()
     }
 
     // payments
     paymentsPurchase(id) {
         if (this.isPaymentsSupported) {
-            this._paymentsPurchases.push({ commonId: id })
-            return Promise.resolve()
+            const purchase = { id }
+            this._paymentsPurchases.push(purchase)
+            return Promise.resolve(purchase)
         }
 
         return Promise.reject()
@@ -519,13 +504,13 @@ class PlatformBridgeBase {
 
     paymentsConsumePurchase(id) {
         if (this.isPaymentsSupported) {
-            const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.commonId === id)
+            const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.id === id)
             if (purchaseIndex < 0) {
                 return Promise.reject()
             }
 
             this._paymentsPurchases.splice(purchaseIndex, 1)
-            return Promise.resolve()
+            return Promise.resolve({ id })
         }
 
         return Promise.reject()
@@ -613,31 +598,24 @@ class PlatformBridgeBase {
         this.emit(EVENT_NAME.VISIBILITY_STATE_CHANGED, this._visibilityState)
     }
 
-    _setInterstitialState(state) {
-        if (this._interstitialState === state && state !== INTERSTITIAL_STATE.FAILED) {
-            return
-        }
+    _setBannerState(state) {
+        this.emit(EVENT_NAME.BANNER_STATE_CHANGED, state)
+    }
 
-        this._interstitialState = state
-        this.emit(EVENT_NAME.INTERSTITIAL_STATE_CHANGED, this._interstitialState)
+    _setInterstitialState(state) {
+        this.emit(EVENT_NAME.INTERSTITIAL_STATE_CHANGED, state)
     }
 
     _setRewardedState(state) {
-        if (this._rewardedState === state && state !== REWARDED_STATE.FAILED) {
-            return
-        }
-
-        this._rewardedState = state
-        this.emit(EVENT_NAME.REWARDED_STATE_CHANGED, this._rewardedState)
+        this.emit(EVENT_NAME.REWARDED_STATE_CHANGED, state)
     }
 
-    _setBannerState(state) {
-        if (this._bannerState === state && state !== BANNER_STATE.FAILED) {
-            return
-        }
+    _setAudioState(isEnabled) {
+        this.emit(EVENT_NAME.AUDIO_STATE_CHANGED, isEnabled)
+    }
 
-        this._bannerState = state
-        this.emit(EVENT_NAME.BANNER_STATE_CHANGED, this._bannerState)
+    _setPauseState(isPaused) {
+        this.emit(EVENT_NAME.PAUSE_STATE_CHANGED, isPaused)
     }
 
     _createPromiseDecorator(actionName) {
@@ -670,9 +648,8 @@ class PlatformBridgeBase {
         }
 
         return this._options.payments
-            .filter((product) => Object.prototype.hasOwnProperty.call(product, this.platformId))
             .map((product) => ({
-                commonId: product.commonId,
+                id: product.id,
                 ...product[this.platformId],
             }))
     }
@@ -683,19 +660,41 @@ class PlatformBridgeBase {
             return null
         }
 
-        const product = products.find((p) => p.commonId === id)
+        const product = products.find((p) => p.id === id)
         if (!product) {
             return null
         }
 
         return {
-            commonId: product.commonId,
+            id: product.id,
             ...product[this.platformId],
         }
     }
 
     _paymentsGenerateTransactionId(id) {
         return `${id}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`
+    }
+
+    _advertisementShowErrorPopup(isRewarded) {
+        const useBuiltInErrorPopup = this._options?.advertisement?.useBuiltInErrorPopup
+        if (useBuiltInErrorPopup) {
+            return showInfoPopup('Oops! It looks like you closed the ad too early, or it isn\'t available right now.')
+                .then(() => {
+                    if (isRewarded) {
+                        this._setRewardedState(REWARDED_STATE.FAILED)
+                    } else {
+                        this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
+                    }
+                })
+        }
+
+        if (isRewarded) {
+            this._setRewardedState(REWARDED_STATE.FAILED)
+        } else {
+            this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
+        }
+
+        return Promise.resolve()
     }
 }
 

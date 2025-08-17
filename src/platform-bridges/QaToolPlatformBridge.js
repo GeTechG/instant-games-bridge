@@ -26,6 +26,7 @@ import {
     REWARDED_STATE,
     BANNER_STATE,
     STORAGE_TYPE,
+    LEADERBOARD_TYPE,
 } from '../constants'
 
 const ADVERTISEMENT_TYPE = {
@@ -52,6 +53,7 @@ const ACTION_NAME_QA = {
     GET_ACHIEVEMENTS: 'get_achievements',
     SHOW_ACHIEVEMENTS_NATIVE_POPUP: 'show_achievements_native_popup',
     GET_PERFORMANCE_RESOURCES: 'get_performance_resources',
+    GET_LANGUAGE: 'get_language',
 }
 
 const INTERSTITIAL_STATUS = {
@@ -61,6 +63,7 @@ const INTERSTITIAL_STATUS = {
     CLOSE: 'close',
     FAILED: 'failed',
 }
+
 const REWARD_STATUS = {
     START: 'start',
     OPEN: 'open',
@@ -80,20 +83,17 @@ const SUPPORTED_FEATURES = {
     ADD_TO_HOME_SCREEN: 'isAddToHomeScreenSupported',
     ADD_TO_FAVORITES: 'isAddToFavoritesSupported',
     RATE: 'isRateSupported',
-    LEADERBOARD: 'isLeaderboardSupported',
-    LEADERBOARD_MULTIPLE_BOARDS: 'isLeaderboardMultipleBoardsSupported',
-    LEADERBOARD_SET_SCORE: 'isLeaderboardSetScoreSupported',
-    LEADERBOARD_GET_SCORE: 'isLeaderboardGetScoreSupported',
-    LEADERBOARD_GET_ENTRIES: 'isLeaderboardGetEntriesSupported',
-    LEADERBOARD_NATIVE_POPUP: 'isLeaderboardNativePopupSupported',
     STORAGE_INTERNAL: 'isStorageInternalSupported',
     STORAGE_LOCAL: 'isStorageLocalSupported',
     BANNER: 'isBannerSupported',
+    INTERSTITIAL: 'isInterstitialSupported',
+    REWARDED: 'isRewardedSupported',
     CLIPBOARD: 'isClipboardSupported',
     ACHIEVEMENTS: 'isAchievementsSupported',
     ACHIEVEMENTS_GET_LIST: 'isGetAchievementsListSupported',
     ACHIEVEMENTS_NATIVE_POPUP: 'isAchievementsNativePopupSupported',
     STORAGE_REMOTE_LOCAL: 'isStorageRemoteLocalSupported',
+    LANGUAGE_SUPPORTED: 'isGetLanguageSupported',
 }
 
 class QaToolPlatformBridge extends PlatformBridgeBase {
@@ -103,6 +103,16 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
     }
 
     get platformLanguage() {
+        if (this._supportedFeatures.includes(SUPPORTED_FEATURES.LANGUAGE_SUPPORTED)) {
+            this.#messageBroker.send({
+                type: MODULE_NAME.PLATFORM,
+                action: ACTION_NAME_QA.GET_LANGUAGE,
+                options: {
+                    language: this._platformLanguage,
+                },
+            })
+        }
+
         return this._platformLanguage
     }
 
@@ -116,6 +126,15 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
 
     get platformPayload() {
         return this._platformPayload
+    }
+
+    // advertisement
+    get isInterstitialSupported() {
+        return this._supportedFeatures.includes(SUPPORTED_FEATURES.INTERSTITIAL)
+    }
+
+    get isRewardedSupported() {
+        return this._supportedFeatures.includes(SUPPORTED_FEATURES.REWARDED)
     }
 
     // player
@@ -162,29 +181,9 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
         return this._supportedFeatures.includes(SUPPORTED_FEATURES.RATE)
     }
 
-    // leaderboard
-    get isLeaderboardSupported() {
-        return this._supportedFeatures.includes(SUPPORTED_FEATURES.LEADERBOARD)
-    }
-
-    get isLeaderboardMultipleBoardsSupported() {
-        return this._supportedFeatures.includes(SUPPORTED_FEATURES.LEADERBOARD_MULTIPLE_BOARDS)
-    }
-
-    get isLeaderboardSetScoreSupported() {
-        return this._supportedFeatures.includes(SUPPORTED_FEATURES.LEADERBOARD_SET_SCORE)
-    }
-
-    get isLeaderboardGetScoreSupported() {
-        return this._supportedFeatures.includes(SUPPORTED_FEATURES.LEADERBOARD_GET_SCORE)
-    }
-
-    get isLeaderboardGetEntriesSupported() {
-        return this._supportedFeatures.includes(SUPPORTED_FEATURES.LEADERBOARD_GET_ENTRIES)
-    }
-
-    get isLeaderboardNativePopupSupported() {
-        return this._supportedFeatures.includes(SUPPORTED_FEATURES.LEADERBOARD_NATIVE_POPUP)
+    // leaderboards
+    get leaderboardsType() {
+        return this._leaderboardsType ?? LEADERBOARD_TYPE.NOT_AVAILABLE
     }
 
     // clipboard
@@ -213,6 +212,8 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
     #messageBroker = new MessageBroker()
 
     _supportedFeatures = []
+
+    _leaderboardsType = null
 
     initialize() {
         if (this._isInitialized) {
@@ -260,6 +261,7 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
         this._platformLanguage = config.platformLanguage ?? super.platformLanguage
         this._platformTld = config.platformTld ?? super.platformTld
         this._platformPayload = config.platformPayload ?? super.platformPayload
+        this._leaderboardsType = config.leaderboardsType ?? LEADERBOARD_TYPE.NOT_AVAILABLE
 
         this._paymentsPurchases = data.purchases || []
 
@@ -530,7 +532,7 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
     }
 
     // advertisement
-    showInterstitial() {
+    showInterstitial(placement) {
         const showInterstitialHandler = ({ data }) => {
             if (data?.type !== MODULE_NAME.ADVERTISEMENT) {
                 return
@@ -560,10 +562,11 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
         this.#messageBroker.send({
             type: MODULE_NAME.ADVERTISEMENT,
             action: ADVERTISEMENT_TYPE.INTERSTITIAL,
+            options: { placement },
         })
     }
 
-    showRewarded() {
+    showRewarded(placement) {
         const showRewardedHandler = ({ data }) => {
             if (data?.type !== MODULE_NAME.ADVERTISEMENT) {
                 return
@@ -596,16 +599,21 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
         this.#messageBroker.send({
             type: MODULE_NAME.ADVERTISEMENT,
             action: ADVERTISEMENT_TYPE.REWARD,
+            options: { placement },
         })
     }
 
-    showBanner() {
+    showBanner(position, placement) {
         this._setBannerState(BANNER_STATE.SHOWN)
 
         this.#messageBroker.send({
             type: MODULE_NAME.ADVERTISEMENT,
             action: BANNER_STATE.SHOWN,
-            options: { type: ADVERTISEMENT_TYPE.BANNER },
+            options: {
+                type: ADVERTISEMENT_TYPE.BANNER,
+                position,
+                placement,
+            },
         })
     }
 
@@ -767,7 +775,8 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
                     }
 
                     if (data.purchase?.status) {
-                        const mergedPurchase = { commonId: id, ...data.purchase.purchaseData }
+                        const mergedPurchase = { id, ...data.purchase.purchaseData }
+                        delete mergedPurchase.commonId
                         this._paymentsPurchases.push(mergedPurchase)
                         this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
                     } else {
@@ -794,7 +803,7 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
     }
 
     paymentsConsumePurchase(id) {
-        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.commonId === id)
+        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.id === id)
         if (purchaseIndex < 0) {
             return Promise.reject()
         }
@@ -821,8 +830,12 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
                     }
 
                     if (data.purchase?.status) {
+                        const result = {
+                            id,
+                            ...data.purchase,
+                        }
                         this._paymentsPurchases.splice(purchaseIndex, 1)
-                        this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, data.result)
+                        this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, result)
                     } else {
                         this._rejectPromiseDecorator(
                             ACTION_NAME.CONSUME_PURCHASE,
@@ -860,10 +873,9 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
                     && data.id === messageId
                 ) {
                     const mergedProducts = products.map((product) => ({
-                        commonId: product.commonId,
                         id: product.id,
-                        price: `${product.amount} Golden Fennec`,
-                        priceCurrencyCode: 'Golden Fennec',
+                        price: `${product.amount} Gam`,
+                        priceCurrencyCode: 'Gam',
                         priceCurrencyImage: 'https://games.playgama.com/assets/gold-fennec-coin-large.webp',
                         priceValue: product.amount,
                     }))
@@ -902,7 +914,7 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
                     this._paymentsPurchases = data.purchases.map((purchase) => {
                         const product = products.find((p) => p.id === purchase.id)
                         return {
-                            commonId: product.commonId,
+                            id: product.id,
                             ...purchase.purchaseData,
                         }
                     })
@@ -1019,109 +1031,70 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
         return promiseDecorator.promise
     }
 
-    // leaderboard
-    setLeaderboardScore(options) {
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
-        if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
+    // leaderboards
+    leaderboardsSetScore(id, score) {
+        if (this.leaderboardsType === LEADERBOARD_TYPE.NOT_AVAILABLE) {
+            return Promise.reject(new Error('Leaderboards are not available'))
+        }
 
-            const scoreOptions = { ...options }
-            if (typeof scoreOptions.score === 'string') {
-                scoreOptions.score = parseInt(scoreOptions.score, 10)
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
+        if (!promiseDecorator) {
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
+
+            const options = {
+                id,
+                score,
             }
 
             this.#messageBroker.send({
-                type: MODULE_NAME.LEADERBOARD,
-                action: ACTION_NAME.SET_LEADERBOARD_SCORE,
-                options: scoreOptions,
+                type: MODULE_NAME.LEADERBOARDS,
+                action: ACTION_NAME.LEADERBOARDS_SET_SCORE,
+                options,
             })
 
-            this._resolvePromiseDecorator(ACTION_NAME.SET_LEADERBOARD_SCORE)
+            this._resolvePromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
         }
 
         return promiseDecorator.promise
     }
 
-    getLeaderboardScore(options) {
-        const platformData = Object.values(options || {}).find((platform) => platform?.leaderboardName)
-        const leaderboardName = platformData?.leaderboardName
-        const decoratorKey = `${ACTION_NAME.GET_LEADERBOARD_SCORE}_${leaderboardName}`
+    leaderboardsGetEntries(id) {
+        if (
+            this.leaderboardsType === LEADERBOARD_TYPE.NOT_AVAILABLE
+            || this.leaderboardsType === LEADERBOARD_TYPE.NATIVE
+        ) {
+            return Promise.reject(new Error('Leaderboards are not available'))
+        }
 
-        let promiseDecorator = this._getPromiseDecorator(decoratorKey)
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES)
         if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(decoratorKey)
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES)
 
             const messageId = this.#messageBroker.generateMessageId()
 
             const messageHandler = ({ data }) => {
                 if (
-                    data?.type === MODULE_NAME.LEADERBOARD
-                    && data.action === ACTION_NAME.GET_LEADERBOARD_SCORE
+                    data?.type === MODULE_NAME.LEADERBOARDS
+                    && data.action === ACTION_NAME.LEADERBOARDS_GET_ENTRIES
                     && data.id === messageId
-                    && data.leaderboardName === leaderboardName
                 ) {
-                    this._resolvePromiseDecorator(decoratorKey, data.score)
+                    this._resolvePromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES, data.entries)
                     this.#messageBroker.removeListener(messageHandler)
+                } else {
+                    this._rejectPromiseDecorator(ACTION_NAME.LEADERBOARDS_GET_ENTRIES)
                 }
             }
 
             this.#messageBroker.addListener(messageHandler)
 
             this.#messageBroker.send({
-                type: MODULE_NAME.LEADERBOARD,
-                action: ACTION_NAME.GET_LEADERBOARD_SCORE,
+                type: MODULE_NAME.LEADERBOARDS,
+                action: ACTION_NAME.LEADERBOARDS_GET_ENTRIES,
                 id: messageId,
-                leaderboardName,
-                options,
+                options: {
+                    id,
+                },
             })
-        }
-
-        return promiseDecorator.promise
-    }
-
-    getLeaderboardEntries(options) {
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES)
-        if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES)
-
-            const messageId = this.#messageBroker.generateMessageId()
-
-            const messageHandler = (event) => {
-                if (
-                    event.data?.type === MODULE_NAME.LEADERBOARD
-                    && event.data.action === ACTION_NAME.GET_LEADERBOARD_ENTRIES
-                    && event.data.id === messageId
-                ) {
-                    this._resolvePromiseDecorator(ACTION_NAME.GET_LEADERBOARD_ENTRIES, event.data.entries)
-                    this.#messageBroker.removeListener(messageHandler)
-                }
-            }
-
-            this.#messageBroker.addListener(messageHandler)
-
-            this.#messageBroker.send({
-                type: MODULE_NAME.LEADERBOARD,
-                action: ACTION_NAME.GET_LEADERBOARD_ENTRIES,
-                id: messageId,
-                options,
-            })
-        }
-
-        return promiseDecorator.promise
-    }
-
-    showLeaderboardNativePopup(options) {
-        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.SHOW_LEADERBOARD_NATIVE_POPUP)
-        if (!promiseDecorator) {
-            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.SHOW_LEADERBOARD_NATIVE_POPUP)
-
-            this.#messageBroker.send({
-                type: MODULE_NAME.LEADERBOARD,
-                action: ACTION_NAME.SHOW_LEADERBOARD_NATIVE_POPUP,
-                options,
-            })
-
-            this._resolvePromiseDecorator(ACTION_NAME.SHOW_LEADERBOARD_NATIVE_POPUP)
         }
 
         return promiseDecorator.promise
@@ -1187,6 +1160,35 @@ class QaToolPlatformBridge extends PlatformBridgeBase {
         })
 
         return Promise.resolve()
+    }
+
+    _paymentsGetProductsPlatformData() {
+        if (!this._options.payments) {
+            return []
+        }
+
+        return this._options.payments
+            .map((product) => ({
+                id: product.id,
+                ...product.playgama,
+            }))
+    }
+
+    _paymentsGetProductPlatformData(id) {
+        const products = this._options.payments
+        if (!products) {
+            return null
+        }
+
+        const product = products.find((p) => p.id === id)
+        if (!product) {
+            return null
+        }
+
+        return {
+            id: product.id,
+            ...product.playgama,
+        }
     }
 }
 

@@ -7,7 +7,6 @@ One SDK for cross-platform publishing HTML5 games.
 + [Crazy Games](https://crazygames.com)
 + [Yandex Games](https://yandex.com/games)
 + [Y8](https://y8.com)
-+ [Wortal](https://wortal.ai)
 + [PlayDeck](https://playdeck.io)
 + [Telegram](https://core.telegram.org/bots/webapps)
 + [VK](https://vk.com)
@@ -17,6 +16,7 @@ One SDK for cross-platform publishing HTML5 games.
 + [Facebook](https://www.facebook.com/games/instantgames)
 + [Poki](https://poki.com/)
 + [MSN](https://www.msn.com/en-us/play)
++ [Discord](https://discord.com/gaming)
 + Other [Work In Progress]
 
 ## Plugins for game engines
@@ -28,6 +28,8 @@ One SDK for cross-platform publishing HTML5 games.
 + [Game Maker](https://github.com/playgama/bridge-gamemaker)
 + [Defold](https://github.com/playgama/bridge-defold)
 + [GDevelop](https://github.com/playgama/bridge-gdevelop)
++ [Cocos Creator](https://github.com/playgama/bridge-cocos-creator)
++ [Scratch](https://github.com/playgama/bridge-scratch)
 
 ## Useful links
 + [Documentation](https://wiki.playgama.com/?utm_source=github&utm_medium=bridge)

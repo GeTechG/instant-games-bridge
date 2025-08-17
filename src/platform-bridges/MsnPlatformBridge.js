@@ -23,14 +23,26 @@ import {
     BANNER_STATE,
     INTERSTITIAL_STATE,
     REWARDED_STATE,
+    BANNER_POSITION,
+    LEADERBOARD_TYPE,
 } from '../constants'
 
 const SDK_URL = 'https://assets.msn.com/staticsb/statics/latest/msstart-games-sdk/msstart-v1.0.0-rc.20.min.js'
+const PLAYGAMA_ADS_SDK_URL = 'https://playgama.com/ads/msn.v0.1.js'
 
 class MsnPlatformBridge extends PlatformBridgeBase {
     // platform
     get platformId() {
         return PLATFORM_ID.MSN
+    }
+
+    // advertisement
+    get isInterstitialSupported() {
+        return true
+    }
+
+    get isRewardedSupported() {
+        return true
     }
 
     // player
@@ -43,13 +55,9 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
-    // leaderboard
-    get isLeaderboardSupported() {
-        return true
-    }
-
-    get isLeaderboardSetScoreSupported() {
-        return true
+    // leaderboards
+    get leaderboardsType() {
+        return LEADERBOARD_TYPE.NATIVE
     }
 
     // advertisement
@@ -62,9 +70,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         return true
     }
 
-    _preloadedInterstitialPromise = null
-
-    _preloadedRewardedPromise = null
+    #playgamaAds = null
 
     initialize() {
         if (this._isInitialized) {
@@ -75,22 +81,33 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.INITIALIZE)
 
-            addJavaScript(SDK_URL).then(() => {
-                waitFor('$msstart').then(() => {
+            addJavaScript(SDK_URL)
+                .then(() => waitFor('$msstart'))
+                .then(() => {
                     this._platformSdk = window.$msstart
-
                     this._platformSdk.getSignedInUserAsync()
                         .then((data) => {
                             this.#updatePlayerInfo(data)
-                            this.#loadInterstitialAdsAsync(true)
-                            this.#loadRewardAdsAsync(true)
                         })
                         .finally(() => {
                             this._isInitialized = true
                             this._resolvePromiseDecorator(ACTION_NAME.INITIALIZE)
                         })
                 })
-            })
+
+            const advertisementBackfillId = this._options?.advertisement?.backfillId
+            if (advertisementBackfillId) {
+                addJavaScript(PLAYGAMA_ADS_SDK_URL)
+                    .then(() => waitFor('pgAds'))
+                    .then(() => {
+                        window.pgAds.init(advertisementBackfillId)
+                            .then(() => {
+                                this.#playgamaAds = window.pgAds
+                                const { gameId } = this._options
+                                this.#playgamaAds.updateTargeting({ gameId })
+                            })
+                    })
+            }
         }
 
         return promiseDecorator.promise
@@ -123,28 +140,30 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         })
     }
 
-    // leaderboard
-    setLeaderboardScore(options) {
-        if (!options?.score) {
-            return Promise.reject(new Error('`score` option is required'))
-        }
-
+    // leaderboards
+    leaderboardsSetScore(id, score) {
         return new Promise((resolve, reject) => {
-            this._platformSdk.submitGameResultsAsync(options.score)
+            this._platformSdk.submitGameResultsAsync(score)
                 .then(resolve)
                 .catch(reject)
         })
     }
 
     // advertisement
-    showBanner(options = {}) {
-        const position = options.position || 'top:728x90'
+    showBanner(position) {
+        let size
 
-        this._platformSdk.showDisplayAdsAsync(
-            !Array.isArray(position)
-                ? [position]
-                : position,
-        )
+        switch (position) {
+            case BANNER_POSITION.TOP:
+                size = 'top:728x90'
+                break
+            case BANNER_POSITION.BOTTOM:
+            default:
+                size = 'bottom:320x50'
+                break
+        }
+
+        this._platformSdk.showDisplayAdsAsync([size])
             .then(() => {
                 this._setBannerState(BANNER_STATE.SHOWN)
             })
@@ -154,10 +173,6 @@ class MsnPlatformBridge extends PlatformBridgeBase {
     }
 
     hideBanner() {
-        if (this._bannerState !== BANNER_STATE.SHOWN) {
-            return
-        }
-
         this._platformSdk.hideDisplayAdsAsync()
             .then(() => {
                 this._setBannerState(BANNER_STATE.HIDDEN)
@@ -165,40 +180,28 @@ class MsnPlatformBridge extends PlatformBridgeBase {
     }
 
     showInterstitial() {
-        this.#loadInterstitialAdsAsync()
+        this._platformSdk.loadAdsAsync(false)
             .then((adInstance) => this._platformSdk.showAdsAsync(adInstance.instanceId))
             .then((adInstance) => {
                 this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
-
                 return adInstance.showAdsCompletedAsync
             })
             .then(() => this._setInterstitialState(INTERSTITIAL_STATE.CLOSED))
-            .catch(() => {
-                this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
-            })
-            .finally(() => {
-                this.#loadInterstitialAdsAsync(true)
-            })
+            .catch(() => this.#showPlaygamaInterstitial())
     }
 
     showRewarded() {
-        this.#loadRewardAdsAsync()
+        this._platformSdk.loadAdsAsync(true)
             .then((adInstance) => this._platformSdk.showAdsAsync(adInstance.instanceId))
             .then((adInstance) => {
                 this._setRewardedState(REWARDED_STATE.OPENED)
-
                 return adInstance.showAdsCompletedAsync
             })
             .then(() => {
                 this._setRewardedState(REWARDED_STATE.REWARDED)
                 this._setRewardedState(REWARDED_STATE.CLOSED)
             })
-            .catch(() => {
-                this._setRewardedState(REWARDED_STATE.FAILED)
-            })
-            .finally(() => {
-                this.#loadRewardAdsAsync(true)
-            })
+            .catch(() => this.#showPlaygamaRewarded())
     }
 
     // payments
@@ -212,7 +215,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.PURCHASE)
 
-            this._platformSdk.iap.purchaseAsync(product)
+            this._platformSdk.iap.purchaseAsync({ productId: id })
                 .then((purchase) => {
                     if (purchase.code === 'IAP_PURCHASE_FAILURE') {
                         this._rejectPromiseDecorator(ACTION_NAME.PURCHASE, purchase.description)
@@ -220,10 +223,12 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                     }
 
                     const mergedPurchase = {
-                        commonId: id,
+                        id,
                         ...purchase.receipt,
                         receiptSignature: purchase.receiptSignature,
                     }
+                    delete mergedPurchase.productId
+
                     this._paymentsPurchases.push(mergedPurchase)
                     this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
                 })
@@ -236,7 +241,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
     }
 
     paymentsConsumePurchase(id) {
-        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.commonId === id)
+        const purchaseIndex = this._paymentsPurchases.findIndex((p) => p.id === id)
         if (purchaseIndex < 0) {
             return Promise.reject()
         }
@@ -245,7 +250,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE)
 
-            this._platformSdk.iap.consumeAsync(this._paymentsPurchases[purchaseIndex].productId)
+            this._platformSdk.iap.consumeAsync({ productId: this._paymentsPurchases[purchaseIndex].id })
                 .then((response) => {
                     if (response.code === 'IAP_CONSUME_FAILURE') {
                         this._rejectPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, response.description)
@@ -253,10 +258,14 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                     }
 
                     this._paymentsPurchases.splice(purchaseIndex, 1)
-                    this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, {
+                    const result = {
+                        id,
                         ...response.consumptionReceipt,
                         consumptionSignature: response.consumptionSignature,
-                    })
+                    }
+
+                    delete result.productId
+                    this._resolvePromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, result)
                 })
                 .catch((error) => {
                     this._rejectPromiseDecorator(ACTION_NAME.CONSUME_PURCHASE, error)
@@ -275,7 +284,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_CATALOG)
 
-            this._platformSdk.iap.getAllAddOnsAsync()
+            this._platformSdk.iap.getAllAddOnsAsync({ productId: this._options.gameId })
                 .then((msnProducts) => {
                     if (msnProducts.code === 'IAP_GET_ALL_ADD_ONS_FAILURE') {
                         this._rejectPromiseDecorator(ACTION_NAME.GET_CATALOG, msnProducts.description)
@@ -283,11 +292,10 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                     }
 
                     const mergedProducts = products.map((product) => {
-                        const msnProduct = msnProducts.find((p) => p.productId === product.productId)
+                        const msnProduct = msnProducts.find((p) => p.productId === product.id)
 
                         return {
-                            commonId: product.commonId,
-                            productId: msnProduct.productId,
+                            id: product.id,
                             title: msnProduct.title,
                             description: msnProduct.description,
                             publisherName: msnProduct.publisherName,
@@ -314,21 +322,24 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.GET_PURCHASES)
 
-            this._platformSdk.iap.getPurchasesAsync()
-                .then((purchases) => {
-                    if (purchases.code === 'IAP_GET_PURCHASES_FAILURE') {
-                        this._rejectPromiseDecorator(ACTION_NAME.GET_PURCHASES, purchases.description)
+            this._platformSdk.iap.getAllPurchasesAsync({ productId: this._options.gameId })
+                .then((response) => {
+                    if (response.code === 'IAP_GET_ALL_PURCHASES_FAILURE') {
+                        this._rejectPromiseDecorator(ACTION_NAME.GET_PURCHASES, response.description)
                         return
                     }
 
                     const products = this._paymentsGetProductsPlatformData()
-                    this._paymentsPurchases = purchases.map((purchase) => {
-                        const product = products.find((p) => p.id === purchase.productID)
-                        return {
-                            commonId: product.commonId,
-                            ...purchase.receipt,
-                            receiptSignature: purchase.receiptSignature,
+                    this._paymentsPurchases = response.receipts.map((purchase) => {
+                        const product = products.find((p) => p.id === purchase.productId)
+                        const mergedPurchase = {
+                            id: product.id,
+                            ...purchase,
+                            receiptSignature: response.receiptSignature,
                         }
+
+                        delete mergedPurchase.productId
+                        return mergedPurchase
                     })
 
                     this._resolvePromiseDecorator(ACTION_NAME.GET_PURCHASES, this._paymentsPurchases)
@@ -341,57 +352,89 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         return promiseDecorator.promise
     }
 
-    #loadRewardAdsAsync(forciblyPreload = false) {
-        if (!forciblyPreload && this._preloadedRewardedPromise) {
-            return this._preloadedRewardedPromise
+    #showPlaygamaInterstitial() {
+        if (!this.#playgamaAds) {
+            return this._advertisementShowErrorPopup(false)
         }
 
-        this._preloadedRewardedPromise = this.#loadAdsAsync(true)
-            .catch(() => {
-                this._preloadedRewardedPromise = null
-            })
-        return this._preloadedRewardedPromise
-    }
+        return new Promise((resolve) => {
+            this.#playgamaAds.requestOutOfPageAd('interstitial')
+                .then((adInstance) => {
+                    switch (adInstance.state) {
+                        case 'empty':
+                            this._advertisementShowErrorPopup(false).then(() => resolve())
+                            return
+                        case 'ready':
+                            this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
+                            adInstance.show()
+                            break
+                        default:
+                            break
+                    }
 
-    #loadInterstitialAdsAsync(forciblyPreload = false) {
-        if (!forciblyPreload && this._preloadedInterstitialPromise) {
-            return this._preloadedInterstitialPromise
-        }
-
-        this._preloadedInterstitialPromise = this.#loadAdsAsync()
-            .catch(() => {
-                this._preloadedInterstitialPromise = null
-            })
-        return this._preloadedInterstitialPromise
-    }
-
-    #loadAdsAsync(isRewardedAd = false) {
-        return new Promise((resolve, reject) => {
-            let attempts = 3
-
-            const loadAdsAsync = () => {
-                attempts -= 1
-                this._platformSdk.loadAdsAsync(isRewardedAd)
-                    .then(resolve)
-                    .catch((e) => {
-                        if (e.code !== 'LOAD_ADS_FAILURE' || attempts < 1) {
-                            reject(e)
-                        } else {
-                            loadAdsAsync()
-                        }
+                    adInstance.addEventListener('ready', () => {
+                        this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
+                        adInstance.show()
                     })
-            }
 
-            loadAdsAsync()
+                    adInstance.addEventListener('empty', () => {
+                        this._advertisementShowErrorPopup(false).then(() => resolve())
+                    })
+
+                    adInstance.addEventListener('closed', () => {
+                        this._setInterstitialState(INTERSTITIAL_STATE.CLOSED)
+                        resolve()
+                    })
+                })
+        })
+    }
+
+    #showPlaygamaRewarded() {
+        if (!this.#playgamaAds) {
+            return this._advertisementShowErrorPopup(true)
+        }
+
+        return new Promise((resolve) => {
+            this.#playgamaAds.requestOutOfPageAd('rewarded')
+                .then((adInstance) => {
+                    switch (adInstance.state) {
+                        case 'empty':
+                            this._advertisementShowErrorPopup(true).then(() => resolve())
+                            return
+                        case 'ready':
+                            this._setRewardedState(REWARDED_STATE.OPENED)
+                            adInstance.show()
+                            break
+                        default:
+                            break
+                    }
+
+                    adInstance.addEventListener('ready', () => {
+                        this._setRewardedState(REWARDED_STATE.OPENED)
+                        adInstance.show()
+                    })
+
+                    adInstance.addEventListener('rewarded', () => {
+                        this._setRewardedState(REWARDED_STATE.REWARDED)
+                    })
+
+                    adInstance.addEventListener('empty', () => {
+                        this._advertisementShowErrorPopup(true).then(() => resolve())
+                    })
+
+                    adInstance.addEventListener('closed', () => {
+                        this._setRewardedState(REWARDED_STATE.CLOSED)
+                        resolve()
+                    })
+                })
         })
     }
 
     #updatePlayerInfo(data) {
         if (data.playerId) {
+            this._isPlayerAuthorized = true
             this._playerId = data.playerId
             this._playerName = data.playerDisplayName
-
-            this._isPlayerAuthorized = true
         }
     }
 }

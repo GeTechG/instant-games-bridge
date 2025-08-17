@@ -39,6 +39,15 @@ class PlayDeckPlatformBridge extends PlatformBridgeBase {
         return super.platformLanguage
     }
 
+    // advertisement
+    get isInterstitialSupported() {
+        return true
+    }
+
+    get isRewardedSupported() {
+        return true
+    }
+
     // player
     get isPlayerAuthorizationSupported() {
         return true
@@ -280,7 +289,26 @@ class PlayDeckPlatformBridge extends PlatformBridgeBase {
 
     // social
     share() {
-        window.parent.postMessage({ playdeck: { method: 'customShare', value: this.#urlParams } }, '*')
+        let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.SHARE)
+        if (!promiseDecorator) {
+            promiseDecorator = this._createPromiseDecorator(ACTION_NAME.SHARE)
+
+            const shareHandler = ({ data }) => {
+                const playdeck = data?.playdeck
+                if (!playdeck) return
+
+                if (playdeck.method === 'customShare') {
+                    window.removeEventListener('message', shareHandler)
+                    this._resolvePromiseDecorator(ACTION_NAME.SHARE)
+                }
+            }
+
+            window.addEventListener('message', shareHandler)
+
+            window.parent.postMessage({ playdeck: { method: 'customShare', value: this.#urlParams } }, '*')
+        }
+
+        return promiseDecorator.promise
     }
 
     // payments
@@ -324,7 +352,7 @@ class PlayDeckPlatformBridge extends PlatformBridgeBase {
                 if (playdeck.method === 'invoiceClosed') {
                     if (playdeck.value.status === 'paid') {
                         window.removeEventListener('message', invoiceClosedHandler)
-                        const mergedPurchase = { commonId: id, ...playdeck.value }
+                        const mergedPurchase = { id, ...playdeck.value }
                         this._paymentsPurchases.push(mergedPurchase)
                         this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
                     } else if (playdeck.value.status === 'cancelled' || playdeck.value.status === 'failed') {
@@ -356,7 +384,7 @@ class PlayDeckPlatformBridge extends PlatformBridgeBase {
         }
 
         const updatedProducts = products.map((product) => ({
-            commonId: product.commonId,
+            id: product.id,
             price: `${product.amount} Stars`,
             priceCurrencyCode: 'Stars',
             priceValue: product.amount,
