@@ -11,6 +11,8 @@ export default class PlayerModule extends ModuleBase {
 
     get photos(): string[];
 
+    get extra(): any;
+
     authorize(options?: {
         scopes?: boolean;
     }): Promise<void>;

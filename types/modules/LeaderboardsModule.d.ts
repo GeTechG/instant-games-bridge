@@ -44,23 +44,11 @@ export interface PlatformSetScoreOptions {
 }
 
 export default class LeaderboardModule extends ModuleBase {
-    get isSupported(): boolean;
-
-    get isNativePopupSupported(): boolean;
-
-    get isMultipleBoardsSupported(): boolean;
-
-    get isSetScoreSupported(): boolean;
-
-    get isGetScoreSupported(): boolean;
-
-    get isGetEntriesSupported(): boolean;
+    get type(): string;
 
     setScore(id: string, score: number): Promise<void>;
 
-    getScore(options: { leaderboardName: string }): Promise<number>;
+    getEntries(id: string): Promise<LeaderboardPlayer[]>;
 
-    getEntries(id: string): Promise<any>;
-
-    showNativePopup(options: any): any;
+    showNativePopup(id: string): Promise<void>;
 }

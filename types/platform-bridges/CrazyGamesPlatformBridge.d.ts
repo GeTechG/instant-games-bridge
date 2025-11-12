@@ -14,8 +14,15 @@ declare class CrazyGamesPlatformBridge extends PlatformBridgeBase {
 
     setDataToStorage(key: any, value: any, storageType: any): Promise<any>;
 
-    showBanner(options: any): void;
+    showBanner(position: any): void;
+
+    paymentsPurchase(id: any): any;
+
+    paymentsGetCatalog(): any;
+
+    paymentsConsumePurchase(id: any): any;
+
+    paymentsGetPurchases(): any;
 
     #private
 }
-// # sourceMappingURL=CrazyGamesPlatformBridge.d.ts.map

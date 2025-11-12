@@ -9,6 +9,7 @@ import LeaderboardModule from './modules/LeaderboardsModule'
 import PaymentsModule from './modules/PaymentsModule'
 import RemoteConfigModule from './modules/RemoteConfigModule'
 import ClipboardModule from './modules/ClipboardModule'
+import AchievementsModule from './modules/AchievementsModule'
 import {
     PLATFORM_ID,
     MODULE_NAME,
@@ -27,6 +28,8 @@ export default class PlaygamaBridge {
 
     get isInitialized(): boolean;
 
+    get options(): any;
+
     get platform(): PlatformModule;
 
     get player(): PlayerModule;
@@ -43,11 +46,19 @@ export default class PlaygamaBridge {
 
     get leaderboard(): LeaderboardModule;
 
+    get leaderboards(): LeaderboardModule;
+
     get payments(): PaymentsModule;
+
+    get achievements(): AchievementsModule;
 
     get remoteConfig(): RemoteConfigModule;
 
     get clipboard(): ClipboardModule;
+
+    get engine(): string;
+
+    set engine(value: string);
 
     get PLATFORM_ID(): typeof PLATFORM_ID;
 

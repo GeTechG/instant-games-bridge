@@ -16,9 +16,9 @@ declare class OkPlatformBridge extends PlatformBridgeBase {
 
     deleteDataFromStorage(key: any, storageType: any): Promise<void> | Promise<any[]>;
 
-    showBanner(options: any): void;
+    showBanner(position: any): void;
 
-    isAdBlockDetected(): any;
+    checkAdBlock(): any;
 
     inviteFriends(options: any): any;
 
@@ -30,4 +30,3 @@ declare class OkPlatformBridge extends PlatformBridgeBase {
 
     #private
 }
-// # sourceMappingURL=OkPlatformBridge.d.ts.map

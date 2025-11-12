@@ -1,22 +1,18 @@
 import PlatformBridgeBase from './PlatformBridgeBase'
 
-export default PlayDeckPlatformBridge
-declare class PlayDeckPlatformBridge extends PlatformBridgeBase {
+export default YoutubePlatformBridge
+declare class YoutubePlatformBridge extends PlatformBridgeBase {
     get platformLanguage(): any;
 
     initialize(): any;
-
-    sendMessage(message: any): Promise<void>;
-
-    authorizePlayer(): Promise<void>;
 
     setDataToStorage(key: any, value: any, storageType: any): Promise<any>;
 
     deleteDataFromStorage(key: any, storageType: any): Promise<any>;
 
-    share(): any;
+    sendMessage(message: any): Promise<void>;
 
-    paymentsPurchase(id: any, options: any): any;
+    leaderboardsSetScore(id: any, score: any, isMain: any): any;
 
     #private
 }

@@ -2,6 +2,8 @@ import PlatformBridgeBase from './PlatformBridgeBase'
 
 export default VkPlayPlatformBridge
 declare class VkPlayPlatformBridge extends PlatformBridgeBase {
+    get platformId(): any;
+
     initialize(): any;
 
     authorizePlayer(): any;
@@ -12,4 +14,3 @@ declare class VkPlayPlatformBridge extends PlatformBridgeBase {
 
     #private
 }
-// # sourceMappingURL=VkPlayPlatformBridge.d.ts.map

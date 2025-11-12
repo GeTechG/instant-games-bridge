@@ -4,8 +4,7 @@ export default GameDistributionPlatformBridge
 declare class GameDistributionPlatformBridge extends PlatformBridgeBase {
     initialize(): any;
 
-    showBanner(options: any): void;
+    showBanner(position: any): void;
 
     #private
 }
-// # sourceMappingURL=GameDistributionPlatformBridge.d.ts.map

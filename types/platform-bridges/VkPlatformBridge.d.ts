@@ -10,7 +10,7 @@ declare class VkPlatformBridge extends PlatformBridgeBase {
 
     deleteDataFromStorage(key: any, storageType: any): Promise<any>;
 
-    showBanner(options: any): void;
+    showBanner(position: any): void;
 
     inviteFriends(): any;
 
@@ -18,16 +18,11 @@ declare class VkPlatformBridge extends PlatformBridgeBase {
 
     share(options: any): any;
 
-    createPost(options: any): any;
-
     addToHomeScreen(): any;
 
     addToFavorites(): any;
-
-    showLeaderboardNativePopup(options: any): any;
 
     clipboardWrite(text: any): any;
 
     #private
 }
-// # sourceMappingURL=VkPlatformBridge.d.ts.map

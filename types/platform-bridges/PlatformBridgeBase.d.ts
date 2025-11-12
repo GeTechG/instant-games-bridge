@@ -1,7 +1,10 @@
 import PromiseDecorator from '../common/PromiseDecorator'
 
-export default class PlatformBridgeBase {
+export default PlatformBridgeBase
+declare class PlatformBridgeBase {
     constructor(options: any);
+
+    get options(): any;
 
     get platformId(): string;
 
@@ -12,6 +15,14 @@ export default class PlatformBridgeBase {
     get platformPayload(): string;
 
     get platformTld(): any;
+
+    get isPlatformGetAllGamesSupported(): boolean;
+
+    get isPlatformGetGameByIdSupported(): boolean;
+
+    get isPlatformAudioEnabled(): boolean;
+
+    get isPlatformPaused(): any;
 
     get visibilityState(): any;
 
@@ -25,15 +36,17 @@ export default class PlatformBridgeBase {
 
     get playerPhotos(): any[];
 
+    get playerExtra(): {};
+
     get defaultStorageType(): string;
 
     get isBannerSupported(): boolean;
 
-    get bannerState(): any;
+    get isInterstitialSupported(): boolean;
 
-    get interstitialState(): any;
+    get isMinimumDelayBetweenInterstitialEnabled(): boolean;
 
-    get rewardedState(): any;
+    get isRewardedSupported(): boolean;
 
     get isInviteFriendsSupported(): boolean;
 
@@ -53,23 +66,19 @@ export default class PlatformBridgeBase {
 
     get deviceType(): string;
 
-    get isLeaderboardSupported(): boolean;
-
-    get isLeaderboardNativePopupSupported(): boolean;
-
-    get isLeaderboardMultipleBoardsSupported(): boolean;
-
-    get isLeaderboardSetScoreSupported(): boolean;
-
-    get isLeaderboardGetScoreSupported(): boolean;
-
-    get isLeaderboardGetEntriesSupported(): boolean;
-
     get isPaymentsSupported(): boolean;
+
+    get leaderboardsType(): string;
 
     get isRemoteConfigSupported(): boolean;
 
     get isClipboardSupported(): boolean;
+
+    get isAchievementsSupported(): boolean;
+
+    get isGetAchievementsListSupported(): boolean;
+
+    get isAchievementsNativePopupSupported(): boolean;
 
     _isInitialized: boolean
 
@@ -83,6 +92,8 @@ export default class PlatformBridgeBase {
 
     _playerPhotos: any[]
 
+    _playerExtra: {}
+
     _visibilityState: any
 
     _localStorage: any
@@ -93,11 +104,11 @@ export default class PlatformBridgeBase {
 
     _isBannerSupported: boolean
 
-    _interstitialState: any
+    _paymentsPurchases: any[]
 
-    _rewardedState: any
+    _pauseStateAggregator: any
 
-    _bannerState: any
+    _audioStateAggregator: any
 
     _options: any
 
@@ -105,7 +116,11 @@ export default class PlatformBridgeBase {
 
     sendMessage(): Promise<void>;
 
-    getServerTime(): any;
+    getServerTime(): Promise<any>;
+
+    getAllGames(): Promise<never>;
+
+    getGameById(): Promise<never>;
 
     authorizePlayer(): Promise<never>;
 
@@ -113,7 +128,7 @@ export default class PlatformBridgeBase {
 
     isStorageAvailable(storageType: any): boolean;
 
-    getDataFromStorage(key: any, storageType: any): Promise<any>;
+    getDataFromStorage(key: any, storageType: any, tryParseJson: any): Promise<any>;
 
     setDataToStorage(key: any, value: any, storageType: any): Promise<void>;
 
@@ -123,11 +138,15 @@ export default class PlatformBridgeBase {
 
     hideBanner(): void;
 
+    preloadInterstitial(): void;
+
     showInterstitial(): void;
+
+    preloadRewarded(): void;
 
     showRewarded(): void;
 
-    isAdBlockDetected(): Promise<any>;
+    checkAdBlock(): Promise<any>;
 
     inviteFriends(): Promise<never>;
 
@@ -143,21 +162,23 @@ export default class PlatformBridgeBase {
 
     rate(): Promise<never>;
 
-    setLeaderboardScore(): Promise<never>;
+    leaderboardsSetScore(): Promise<never>;
 
-    getLeaderboardScore(): Promise<never>;
+    leaderboardsGetEntries(): Promise<never>;
 
-    getLeaderboardEntries(): Promise<never>;
+    leaderboardsShowNativePopup(): Promise<never>;
 
-    showLeaderboardNativePopup(): Promise<never>;
+    paymentsPurchase(id: any): Promise<{
+        id: any;
+    }>;
 
-    purchase(): Promise<never>;
+    paymentsConsumePurchase(id: any): Promise<{
+        id: any;
+    }>;
 
-    getPaymentsPurchases(): Promise<never>;
+    paymentsGetCatalog(): Promise<any>;
 
-    getPaymentsCatalog(): Promise<never>;
-
-    consumePurchase(): Promise<never>;
+    paymentsGetPurchases(): Promise<any[]>;
 
     getRemoteConfig(): Promise<never>;
 
@@ -165,17 +186,29 @@ export default class PlatformBridgeBase {
 
     clipboardWrite(text: any): Promise<void>;
 
-    _getDataFromLocalStorage(key: any): any;
+    unlockAchievement(): Promise<never>;
+
+    getAchievementsList(): Promise<never>;
+
+    showAchievementsNativePopup(): Promise<never>;
+
+    _getDataFromLocalStorage(key: any, tryParseJson: any): any;
 
     _setDataToLocalStorage(key: any, value: any): void;
 
     _deleteDataFromLocalStorage(key: any): void;
 
+    _setVisibilityState(state: any): void;
+
+    _setBannerState(state: any): void;
+
     _setInterstitialState(state: any): void;
 
     _setRewardedState(state: any): void;
 
-    _setBannerState(state: any): void;
+    _setAudioState(isEnabled: any): void;
+
+    _setPauseState(isPaused: any): void;
 
     _createPromiseDecorator(actionName: any): PromiseDecorator;
 
@@ -185,5 +218,15 @@ export default class PlatformBridgeBase {
 
     _rejectPromiseDecorator(id: any, error: any): void;
 
-    static mixin(target: any): void;
+    _paymentsGetProductsPlatformData(): any;
+
+    _paymentsGetProductPlatformData(id: any): any;
+
+    _paymentsGenerateTransactionId(id: any): string;
+
+    _advertisementShowErrorPopup(isRewarded: any): Promise<void>;
+
+    _playerApplyGuestData(): void;
+
+    #private
 }
