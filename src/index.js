@@ -17,4 +17,7 @@
 
 import PlaygamaBridge from './PlaygamaBridge'
 
-window.bridge = new PlaygamaBridge()
+if (!window.bridge && !window.playgamaBridge) {
+    window.bridge = new PlaygamaBridge()
+    window.playgamaBridge = window.bridge
+}

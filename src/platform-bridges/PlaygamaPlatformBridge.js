@@ -24,6 +24,7 @@ import {
     REWARDED_STATE,
     STORAGE_TYPE,
     ERROR,
+    PLATFORM_MESSAGE,
 } from '../constants'
 
 const SDK_URL = 'https://developer.playgama.com/sdk/v1.js'
@@ -59,7 +60,7 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
     }
 
     get platformLanguage() {
-        return this._platformSdk.platformService.getLanguage()
+        return this._platformSdk.platformService.getLanguage() || super.platformLanguage
     }
 
     initialize() {
@@ -73,6 +74,59 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
             addJavaScript(SDK_URL).then(() => {
                 waitFor('PLAYGAMA_SDK').then(() => {
                     this._platformSdk = window.PLAYGAMA_SDK
+
+                    this._platformSdk.advService.subscribeToAdStateChanges((adType, state) => {
+                        if (adType === 'interstitial') {
+                            switch (state) {
+                                case 'open': {
+                                    this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
+                                    break
+                                }
+                                case 'empty': {
+                                    this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
+                                    break
+                                }
+                                case 'close': {
+                                    this._setInterstitialState(INTERSTITIAL_STATE.CLOSED)
+                                    break
+                                }
+                                case 'error': {
+                                    this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
+                                    break
+                                }
+                                default: {
+                                    break
+                                }
+                            }
+                        } else if (adType === 'rewarded') {
+                            switch (state) {
+                                case 'open': {
+                                    this._setRewardedState(REWARDED_STATE.OPENED)
+                                    break
+                                }
+                                case 'empty': {
+                                    this._setRewardedState(REWARDED_STATE.FAILED)
+                                    break
+                                }
+                                case 'rewarded': {
+                                    this._setRewardedState(REWARDED_STATE.REWARDED)
+                                    break
+                                }
+                                case 'close': {
+                                    this._setRewardedState(REWARDED_STATE.CLOSED)
+                                    break
+                                }
+                                case 'error': {
+                                    this._setRewardedState(REWARDED_STATE.FAILED)
+                                    break
+                                }
+                                default: {
+                                    break
+                                }
+                            }
+                        }
+                    })
+
                     this.#getPlayer().then(() => {
                         this._isInitialized = true
                         this._resolvePromiseDecorator(ACTION_NAME.INITIALIZE)
@@ -82,6 +136,19 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
         }
 
         return promiseDecorator.promise
+    }
+
+    // platform
+    sendMessage(message) {
+        switch (message) {
+            case PLATFORM_MESSAGE.GAME_READY: {
+                this._platformSdk.gameService.gameReady()
+                return Promise.resolve()
+            }
+            default: {
+                return super.sendMessage(message)
+            }
+        }
     }
 
     // storage
@@ -200,40 +267,11 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
 
     // advertisement
     showInterstitial() {
-        this._platformSdk.advService.showInterstitial({
-            onOpen: () => {
-                this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
-            },
-            onEmpty: () => {
-                this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
-            },
-            onClose: () => {
-                this._setInterstitialState(INTERSTITIAL_STATE.CLOSED)
-            },
-            onError: () => {
-                this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
-            },
-        })
+        this._platformSdk.advService.showInterstitial()
     }
 
     showRewarded() {
-        this._platformSdk.advService.showRewarded({
-            onOpen: () => {
-                this._setRewardedState(REWARDED_STATE.OPENED)
-            },
-            onRewarded: () => {
-                this._setRewardedState(REWARDED_STATE.REWARDED)
-            },
-            onEmpty: () => {
-                this._setRewardedState(REWARDED_STATE.FAILED)
-            },
-            onClose: () => {
-                this._setRewardedState(REWARDED_STATE.CLOSED)
-            },
-            onError: () => {
-                this._setRewardedState(REWARDED_STATE.FAILED)
-            },
-        })
+        this._platformSdk.advService.showRewarded()
     }
 
     authorizePlayer(options) {
@@ -264,10 +302,14 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
     }
 
     // payments
-    paymentsPurchase(id) {
+    paymentsPurchase(id, options) {
         const product = this._paymentsGetProductPlatformData(id)
         if (!product) {
             return Promise.reject()
+        }
+
+        if (options && options.externalId) {
+            product.externalId = options.externalId
         }
 
         if (!product.externalId) {
@@ -317,18 +359,21 @@ class PlaygamaPlatformBridge extends PlatformBridgeBase {
         return new Promise((resolve) => {
             this._platformSdk.userService.getUser()
                 .then((player) => {
-                    this._playerId = player.id
-                    this._isPlayerAuthorized = player.isAuthorized
-                    this._playerName = player.name
-                    this._playerPhotos = player.photos
-                    this._defaultStorageType = this._isPlayerAuthorized
-                        ? STORAGE_TYPE.PLATFORM_INTERNAL
-                        : STORAGE_TYPE.LOCAL_STORAGE
-                    if (this._isPlayerAuthorized) {
+                    if (player.isAuthorized) {
+                        this._isPlayerAuthorized = true
+                        this._playerId = player.id
+                        this._playerName = player.name
+                        this._playerPhotos = player.photos
+                        this._playerExtra = player
+                        this._defaultStorageType = STORAGE_TYPE.PLATFORM_INTERNAL
                         return this.#getDataFromPlatformStorage([])
                     }
 
+                    this._playerApplyGuestData()
                     return Promise.resolve()
+                })
+                .catch(() => {
+                    this._playerApplyGuestData()
                 })
                 .finally(() => {
                     resolve()

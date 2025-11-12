@@ -23,6 +23,8 @@ import {
     STORAGE_TYPE,
     PLATFORM_MESSAGE,
     LEADERBOARD_TYPE,
+    REWARDED_STATE,
+    INTERSTITIAL_STATE,
 } from '../constants'
 
 const SDK_URL = 'https://www.youtube.com/game_api/v1'
@@ -41,12 +43,13 @@ class YoutubePlatformBridge extends PlatformBridgeBase {
         return super.platformLanguage
     }
 
-    get isPlatformAudioEnabled() {
-        return this.#isAudioEnabled
+    // advertisement
+    get isInterstitialSupported() {
+        return true
     }
 
-    get isPlatformPaused() {
-        return this.#isPaused
+    get isRewardedSupported() {
+        return true
     }
 
     // social
@@ -61,10 +64,6 @@ class YoutubePlatformBridge extends PlatformBridgeBase {
 
     #platformLanguage
 
-    #isAudioEnabled = true
-
-    #isPaused = false
-
     initialize() {
         if (this._isInitialized) {
             return Promise.resolve()
@@ -77,7 +76,7 @@ class YoutubePlatformBridge extends PlatformBridgeBase {
                 waitFor('ytgame').then(() => {
                     this._platformSdk = window.ytgame
                     this._defaultStorageType = STORAGE_TYPE.PLATFORM_INTERNAL
-                    this.#isAudioEnabled = this._platformSdk.system.isAudioEnabled()
+                    this._audioStateAggregator.setState('platform', !this._platformSdk.system.isAudioEnabled())
 
                     const getLanguagePromise = this._platformSdk.system.getLanguage()
                         .then((language) => {
@@ -93,18 +92,15 @@ class YoutubePlatformBridge extends PlatformBridgeBase {
                         })
 
                     this._platformSdk.system.onAudioEnabledChange((isEnabled) => {
-                        this.#isAudioEnabled = isEnabled
                         this._setAudioState(isEnabled)
                     })
 
                     this._platformSdk.system.onPause(() => {
-                        this.#isPaused = true
-                        this._setPauseState(this.#isPaused)
+                        this._setPauseState(true)
                     })
 
                     this._platformSdk.system.onResume(() => {
-                        this.#isPaused = false
-                        this._setPauseState(this.#isPaused)
+                        this._setPauseState(false)
                     })
 
                     Promise.all([getLanguagePromise, getDataPromise])
@@ -261,6 +257,30 @@ class YoutubePlatformBridge extends PlatformBridgeBase {
                 return super.sendMessage(message)
             }
         }
+    }
+
+    // advertisement
+    showInterstitial() {
+        this._setInterstitialState(INTERSTITIAL_STATE.OPENED)
+        this._platformSdk.ads.requestInterstitialAd()
+            .then(() => {
+                this._setInterstitialState(INTERSTITIAL_STATE.CLOSED)
+            })
+            .catch(() => {
+                this._setInterstitialState(INTERSTITIAL_STATE.FAILED)
+            })
+    }
+
+    showRewarded() {
+        this._setRewardedState(REWARDED_STATE.OPENED)
+        this._platformSdk.ads.requestInterstitialAd()
+            .then(() => {
+                this._setRewardedState(REWARDED_STATE.REWARDED)
+                this._setRewardedState(REWARDED_STATE.CLOSED)
+            })
+            .catch(() => {
+                this._setRewardedState(REWARDED_STATE.FAILED)
+            })
     }
 
     // leaderboards

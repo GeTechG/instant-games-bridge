@@ -67,10 +67,12 @@ class MsnPlatformBridge extends PlatformBridgeBase {
 
     // payments
     get isPaymentsSupported() {
-        return true
+        return this.#isPaymentsSupported
     }
 
     #playgamaAds = null
+
+    #isPaymentsSupported = false
 
     initialize() {
         if (this._isInitialized) {
@@ -88,6 +90,9 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                     this._platformSdk.getSignedInUserAsync()
                         .then((data) => {
                             this.#updatePlayerInfo(data)
+                        })
+                        .catch(() => {
+                            this.#updatePlayerInfo(null)
                         })
                         .finally(() => {
                             this._isInitialized = true
@@ -126,6 +131,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                     resolve()
                 })
                 .catch((e) => {
+                    this.#updatePlayerInfo(null)
                     reject(e)
                 })
         })
@@ -215,7 +221,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.PURCHASE)
 
-            this._platformSdk.iap.purchaseAsync({ productId: id })
+            this._platformSdk.iap.purchaseAsync({ productId: product.platformProductId })
                 .then((purchase) => {
                     if (purchase.code === 'IAP_PURCHASE_FAILURE') {
                         this._rejectPromiseDecorator(ACTION_NAME.PURCHASE, purchase.description)
@@ -227,7 +233,6 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                         ...purchase.receipt,
                         receiptSignature: purchase.receiptSignature,
                     }
-                    delete mergedPurchase.productId
 
                     this._paymentsPurchases.push(mergedPurchase)
                     this._resolvePromiseDecorator(ACTION_NAME.PURCHASE, mergedPurchase)
@@ -292,7 +297,7 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                     }
 
                     const mergedProducts = products.map((product) => {
-                        const msnProduct = msnProducts.find((p) => p.productId === product.id)
+                        const msnProduct = msnProducts.find((p) => p.productId === product.platformProductId)
 
                         return {
                             id: product.id,
@@ -338,7 +343,6 @@ class MsnPlatformBridge extends PlatformBridgeBase {
                             receiptSignature: response.receiptSignature,
                         }
 
-                        delete mergedPurchase.productId
                         return mergedPurchase
                     })
 
@@ -431,10 +435,14 @@ class MsnPlatformBridge extends PlatformBridgeBase {
     }
 
     #updatePlayerInfo(data) {
-        if (data.playerId) {
+        if (data) {
             this._isPlayerAuthorized = true
             this._playerId = data.playerId
             this._playerName = data.playerDisplayName
+            this._playerExtra = data
+            this.#isPaymentsSupported = data.userAccountType.toLowerCase() === 'personal'
+        } else {
+            this._playerApplyGuestData()
         }
     }
 }

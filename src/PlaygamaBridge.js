@@ -58,11 +58,15 @@ import FacebookPlatformBridge from './platform-bridges/FacebookPlatformBridge'
 import QaToolPlatformBridge from './platform-bridges/QaToolPlatformBridge'
 import PokiPlatformBridge from './platform-bridges/PokiPlatformBridge'
 import MsnPlatformBridge from './platform-bridges/MsnPlatformBridge'
+import HuaweiPlatformBridge from './platform-bridges/HuaweiPlatformBridge'
 import BitquestPlatformBridge from './platform-bridges/BitquestPlatformBridge'
 import GamePushPlatformBridge from './platform-bridges/GamePushPlatformBridge'
 import DiscordPlatformBridge from './platform-bridges/DiscordPlatformBridge'
 import YoutubePlatformBridge from './platform-bridges/YoutubePlatformBridge'
 import { deepMerge } from './common/utils'
+import JioGamesPlatformBridge from './platform-bridges/JioGamesPlatformBridge'
+import PortalPlatformBridge from './platform-bridges/PortalPlatformBridge'
+import RedditPlatformBridge from './platform-bridges/RedditPlatformBridge'
 
 class PlaygamaBridge {
     get version() {
@@ -129,6 +133,14 @@ class PlaygamaBridge {
         return this.#getModule(MODULE_NAME.CLIPBOARD)
     }
 
+    get engine() {
+        return this.#engine
+    }
+
+    set engine(value) {
+        this.#engine = value
+    }
+
     get PLATFORM_ID() {
         return PLATFORM_ID
     }
@@ -177,6 +189,8 @@ class PlaygamaBridge {
 
     #modules = {}
 
+    #engine = 'javascript'
+
     initialize(options) {
         if (this.#isInitialized) {
             return Promise.resolve()
@@ -197,11 +211,14 @@ class PlaygamaBridge {
                 .then((data) => {
                     modifiedOptions = { ...data }
                 })
-                .catch(() => {
+                .catch((error) => {
+                    console.error('Config parsing error.', error)
                     modifiedOptions = { ...options }
                 })
                 .finally(() => {
                     this.#createPlatformBridge(modifiedOptions)
+
+                    this.#platformBridge.engine = this.engine
 
                     this.#modules[MODULE_NAME.PLATFORM] = new PlatformModule(this.#platformBridge)
                     this.#modules[MODULE_NAME.PLAYER] = new PlayerModule(this.#platformBridge)
@@ -220,7 +237,7 @@ class PlaygamaBridge {
                         .initialize()
                         .then(() => {
                             this.#isInitialized = true
-                            console.info(`%c PlaygamaBridge v.${this.version} initialized. `, 'background: #01A5DA; color: white')
+                            console.info(`%c PlaygamaBridge v${this.version} initialized. `, 'background: #01A5DA; color: white')
 
                             if (this.#initializationPromiseDecorator) {
                                 this.#initializationPromiseDecorator.resolve()
@@ -290,6 +307,12 @@ class PlaygamaBridge {
                 platformId = PLATFORM_ID.GAMEPUSH
             } else if (url.hostname.includes('discordsays.com')) {
                 platformId = PLATFORM_ID.DISCORD
+            } else if (url.hostname.includes('usercontent.goog')) {
+                platformId = PLATFORM_ID.YOUTUBE
+            } else if (url.hostname.includes('portalapp.')) {
+                platformId = PLATFORM_ID.PORTAL
+            } else if (url.hostname.includes('devvit.')) {
+                platformId = PLATFORM_ID.REDDIT
             }
         }
 
@@ -361,6 +384,10 @@ class PlaygamaBridge {
                 this.#platformBridge = new MsnPlatformBridge(modifiedOptions)
                 break
             }
+            case PLATFORM_ID.HUAWEI: {
+                this.#platformBridge = new HuaweiPlatformBridge(modifiedOptions)
+                break
+            }
             case PLATFORM_ID.BITQUEST: {
                 this.#platformBridge = new BitquestPlatformBridge(modifiedOptions)
                 break
@@ -375,6 +402,18 @@ class PlaygamaBridge {
             }
             case PLATFORM_ID.YOUTUBE: {
                 this.#platformBridge = new YoutubePlatformBridge(modifiedOptions)
+                break
+            }
+            case PLATFORM_ID.JIO_GAMES: {
+                this.#platformBridge = new JioGamesPlatformBridge(modifiedOptions)
+                break
+            }
+            case PLATFORM_ID.PORTAL: {
+                this.#platformBridge = new PortalPlatformBridge(modifiedOptions)
+                break
+            }
+            case PLATFORM_ID.REDDIT: {
+                this.#platformBridge = new RedditPlatformBridge(modifiedOptions)
                 break
             }
             default: {

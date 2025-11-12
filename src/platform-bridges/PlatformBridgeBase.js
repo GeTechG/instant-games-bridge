@@ -29,7 +29,8 @@ import {
     LEADERBOARD_TYPE,
 } from '../constants'
 import PromiseDecorator from '../common/PromiseDecorator'
-import { showInfoPopup } from '../common/utils'
+import StateAggregator from '../common/StateAggregator'
+import { getGuestUser, showInfoPopup } from '../common/utils'
 
 class PlatformBridgeBase {
     get options() {
@@ -72,10 +73,18 @@ class PlatformBridgeBase {
     }
 
     get isPlatformAudioEnabled() {
+        if (this._audioStateAggregator) {
+            return !this._audioStateAggregator.getAggregatedState()
+        }
+
         return true
     }
 
     get isPlatformPaused() {
+        if (this._pauseStateAggregator) {
+            return this._pauseStateAggregator.getAggregatedState()
+        }
+
         return false
     }
 
@@ -103,6 +112,10 @@ class PlatformBridgeBase {
 
     get playerPhotos() {
         return this._playerPhotos
+    }
+
+    get playerExtra() {
+        return this._playerExtra
     }
 
     // storage
@@ -221,6 +234,8 @@ class PlatformBridgeBase {
 
     _playerPhotos = []
 
+    _playerExtra = {}
+
     _visibilityState = null
 
     _localStorage = null
@@ -233,6 +248,10 @@ class PlatformBridgeBase {
 
     _paymentsPurchases = []
 
+    _pauseStateAggregator = null
+
+    _audioStateAggregator = null
+
     #promiseDecorators = { }
 
     constructor(options) {
@@ -241,6 +260,17 @@ class PlatformBridgeBase {
         }
 
         this._visibilityState = document.visibilityState
+
+        const aggregationStates = ['interstitial', 'rewarded', 'visibility', 'platform']
+        this._pauseStateAggregator = new StateAggregator(
+            aggregationStates,
+            (isPaused) => this.emit(EVENT_NAME.PAUSE_STATE_CHANGED, isPaused),
+        )
+
+        this._audioStateAggregator = new StateAggregator(
+            aggregationStates,
+            (isDisabled) => this.emit(EVENT_NAME.AUDIO_STATE_CHANGED, !isDisabled),
+        )
 
         document.addEventListener('visibilitychange', () => {
             this._setVisibilityState(document.visibilityState)
@@ -270,7 +300,7 @@ class PlatformBridgeBase {
 
     getServerTime() {
         return new Promise((resolve, reject) => {
-            fetch('https://worldtimeapi.org/api/timezone/Etc/UTC')
+            fetch('https://playgama.com/api/v1/timestamp/now')
                 .then((response) => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok')
@@ -278,7 +308,7 @@ class PlatformBridgeBase {
                     return response.json()
                 })
                 .then((data) => {
-                    resolve(data.unixtime * 1000)
+                    resolve(data.timestamp * 1000)
                 })
                 .catch(() => {
                     reject()
@@ -491,6 +521,10 @@ class PlatformBridgeBase {
         return Promise.reject()
     }
 
+    leaderboardsShowNativePopup() {
+        return Promise.reject()
+    }
+
     // payments
     paymentsPurchase(id) {
         if (this.isPaymentsSupported) {
@@ -596,6 +630,15 @@ class PlatformBridgeBase {
 
         this._visibilityState = state
         this.emit(EVENT_NAME.VISIBILITY_STATE_CHANGED, this._visibilityState)
+
+        const isHidden = state === VISIBILITY_STATE.HIDDEN
+        if (this._pauseStateAggregator) {
+            this._pauseStateAggregator.setState('visibility', isHidden)
+        }
+
+        if (this._audioStateAggregator) {
+            this._audioStateAggregator.setState('visibility', isHidden)
+        }
     }
 
     _setBannerState(state) {
@@ -604,18 +647,44 @@ class PlatformBridgeBase {
 
     _setInterstitialState(state) {
         this.emit(EVENT_NAME.INTERSTITIAL_STATE_CHANGED, state)
+
+        const isActive = state === INTERSTITIAL_STATE.OPENED
+        if (this._pauseStateAggregator) {
+            this._pauseStateAggregator.setState('interstitial', isActive)
+        }
+
+        if (this._audioStateAggregator) {
+            this._audioStateAggregator.setState('interstitial', isActive)
+        }
     }
 
     _setRewardedState(state) {
         this.emit(EVENT_NAME.REWARDED_STATE_CHANGED, state)
+
+        const isActive = state === REWARDED_STATE.OPENED || state === REWARDED_STATE.REWARDED
+        if (this._pauseStateAggregator) {
+            this._pauseStateAggregator.setState('rewarded', isActive)
+        }
+
+        if (this._audioStateAggregator) {
+            this._audioStateAggregator.setState('rewarded', isActive)
+        }
     }
 
     _setAudioState(isEnabled) {
-        this.emit(EVENT_NAME.AUDIO_STATE_CHANGED, isEnabled)
+        if (this._audioStateAggregator) {
+            this._audioStateAggregator.setState('platform', !isEnabled)
+        } else {
+            this.emit(EVENT_NAME.AUDIO_STATE_CHANGED, isEnabled)
+        }
     }
 
     _setPauseState(isPaused) {
-        this.emit(EVENT_NAME.PAUSE_STATE_CHANGED, isPaused)
+        if (this._pauseStateAggregator) {
+            this._pauseStateAggregator.setState('platform', isPaused)
+        } else {
+            this.emit(EVENT_NAME.PAUSE_STATE_CHANGED, isPaused)
+        }
     }
 
     _createPromiseDecorator(actionName) {
@@ -648,10 +717,16 @@ class PlatformBridgeBase {
         }
 
         return this._options.payments
-            .map((product) => ({
-                id: product.id,
-                ...product[this.platformId],
-            }))
+            .map((product) => {
+                const mergedProduct = {
+                    ...product[this.platformId],
+                }
+
+                mergedProduct.platformProductId = mergedProduct.id
+                mergedProduct.id = product.id
+
+                return mergedProduct
+            })
     }
 
     _paymentsGetProductPlatformData(id) {
@@ -665,10 +740,14 @@ class PlatformBridgeBase {
             return null
         }
 
-        return {
-            id: product.id,
+        const mergedProduct = {
             ...product[this.platformId],
         }
+
+        mergedProduct.platformProductId = mergedProduct.id
+        mergedProduct.id = product.id
+
+        return mergedProduct
     }
 
     _paymentsGenerateTransactionId(id) {
@@ -695,6 +774,12 @@ class PlatformBridgeBase {
         }
 
         return Promise.resolve()
+    }
+
+    _playerApplyGuestData() {
+        const guest = getGuestUser()
+        this._playerId = guest.id
+        this._playerName = guest.name
     }
 }
 

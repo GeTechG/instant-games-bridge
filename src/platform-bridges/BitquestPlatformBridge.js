@@ -27,6 +27,10 @@ import {
     LEADERBOARD_TYPE,
 } from '../constants'
 
+const PROD_SDK_URL = 'https://app.bitquest.games/bqsdk.min.js'
+const STAGE_SDK_URL = 'https://app-stage.bitquest.games/bqsdk.min.js'
+const BANK_SDK_URL = 'https://app-global.memebeat.io/bqsdk.min.js'
+
 class BitquestPlatformBridge extends PlatformBridgeBase {
     get platformId() {
         return PLATFORM_ID.BITQUEST
@@ -65,9 +69,25 @@ class BitquestPlatformBridge extends PlatformBridgeBase {
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.INITIALIZE)
 
-            const SDK_URL = 'https://app-stage.bitquest.games/bqsdk.min.js'
+            const urlParams = new URLSearchParams(window.location.search)
+            const target = urlParams.get('target')
+            let sdkUrl
 
-            addJavaScript(SDK_URL).then(() => {
+            switch (target) {
+                case 'prod':
+                    sdkUrl = PROD_SDK_URL
+                    break
+                case 'stage':
+                    sdkUrl = STAGE_SDK_URL
+                    break
+                case 'bank':
+                    sdkUrl = BANK_SDK_URL
+                    break
+                default:
+                    sdkUrl = PROD_SDK_URL
+            }
+
+            addJavaScript(sdkUrl).then(() => {
                 waitFor('bq').then(() => {
                     this._platformSdk = window.bq
 
@@ -80,6 +100,8 @@ class BitquestPlatformBridge extends PlatformBridgeBase {
                             this._playerId = id
                             this._playerName = name
                             this._isPlayerAuthorized = true
+                            this._defaultStorageType = STORAGE_TYPE.PLATFORM_INTERNAL
+                            this._playerExtra = player
 
                             this.#setupAdvertisementHandlers()
                             this.showPreRoll()
@@ -163,16 +185,7 @@ class BitquestPlatformBridge extends PlatformBridgeBase {
                     throw new Error('Key and value arrays must have the same length')
                 }
 
-                if (Array.isArray(key) && Array.isArray(value)) {
-                    this._platformSdk.storage.set(key, value, 'platform_internal')
-                    return
-                }
-
-                /* eslint-disable no-await-in-loop */
-                for (let i = 0; i < key.length; i++) {
-                    await this._platformSdk.storage.set(key[i], value[i], 'platform_internal')
-                }
-                /* eslint-enable no-await-in-loop */
+                await this._platformSdk.storage.set(key, value, 'platform_internal')
                 return
             }
 
@@ -280,9 +293,9 @@ class BitquestPlatformBridge extends PlatformBridgeBase {
                             }
 
                             return {
+                                id: product.id,
                                 name: catalogProduct.name,
                                 description: catalogProduct.description,
-                                id: catalogProduct.purchaseId,
                                 price: catalogProduct.priceValue,
                                 priceCurrencyCode: catalogProduct.currencyCode,
                                 priceValue: catalogProduct.price,
@@ -360,10 +373,6 @@ class BitquestPlatformBridge extends PlatformBridgeBase {
 
     // leaderboards
     leaderboardsSetScore(id, score) {
-        if (!this._isPlayerAuthorized) {
-            return Promise.reject()
-        }
-
         let promiseDecorator = this._getPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
         if (!promiseDecorator) {
             promiseDecorator = this._createPromiseDecorator(ACTION_NAME.LEADERBOARDS_SET_SCORE)
