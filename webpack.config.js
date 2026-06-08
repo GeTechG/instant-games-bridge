@@ -33,22 +33,10 @@ const createConfig = (targetPlatforms = [], { noLint = false } = {}) => ({
     entry: './src/index.js',
     output: {
         filename: 'playgama-bridge.js',
-        chunkFilename: (pathData) => {
-            const chunkId = String(pathData.chunk.id || pathData.chunk.name || '')
-            const platformDirNameRegex = new RegExp(`${platformDirName}_(\\w+)_js`)
-            const match = chunkId.match(platformDirNameRegex)
-            if (match) {
-                const name = match[1]
-                    .replace(/PlatformBridge/, '')
-                    .replace(/([A-Z])/g, '-$1')
-                    .replace(/-/g, '')
-                    .toLowerCase()
-                return `${platformDirName}/${name}.js`
-            }
-            return `${platformDirName}/${chunkId}.js`
-        },
         path: path.resolve(__dirname, 'dist'),
-        publicPath: 'auto',
+        library: {
+            type: 'umd',
+        },
     },
     module: {
         rules: [
@@ -110,7 +98,7 @@ module.exports = (env = {}) => {
             name: 'platform',
             output: {
                 filename: 'playgama-bridge.js',
-                path: path.resolve(__dirname, `dist`),
+                path: path.resolve(__dirname, 'dist'),
                 publicPath: 'auto',
             },
             plugins: [

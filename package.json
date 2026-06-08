@@ -24,6 +24,14 @@
     "bugs": {
         "url": "https://github.com/playgama/bridge/issues"
     },
+    "exports": {
+        ".": {
+            "import": {
+                "default": "./dist/playgama-bridge.js",
+                "types": "./types/index.d.ts"
+            }
+        }
+    },
     "homepage": "https://github.com/playgama/bridge",
     "dependencies": {
         "event-lite": "^0.1.2"
