@@ -4,8 +4,13 @@ import { StateManager } from '../stateManager/stateManager'
 import type { PlaygamaPlayer, PlaygamaSdk } from './playgama.types'
 
 export function createPlaygamaSdk(
-    testGlobalThis: TestGlobalThis, 
-    stateManager: StateManager
+    testGlobalThis: TestGlobalThis,
+    stateManager: StateManager,
+    capabilities: {
+        playerAuthorization?: boolean
+        cloudSave?: boolean
+        payments?: boolean
+    } = {},
 ): Promise<void> {
 
     const userService = {
@@ -42,11 +47,23 @@ export function createPlaygamaSdk(
     }
 
 
-    testGlobalThis.PLAYGAMA_SDK = {
+    const platformService = {
+        isReady: Promise.resolve(),
+        getIsPlayerAuthorizationSupported: vi.fn().mockReturnValue(capabilities.playerAuthorization ?? true),
+        getIsCloudSaveSupported: vi.fn().mockReturnValue(capabilities.cloudSave ?? true),
+        getIsPaymentsSupported: vi.fn().mockReturnValue(capabilities.payments ?? false),
+        getAdditionalParams: vi.fn().mockReturnValue({}),
+    }
+
+    const sdk = {
         userService,
         advService,
         cloudSaveApi,
+        platformService,
     }
+
+    testGlobalThis.PLAYGAMA_SDK = sdk
+    testGlobalThis.PLAYGAMA_WRAP = sdk
 
     return Promise.resolve()
 }

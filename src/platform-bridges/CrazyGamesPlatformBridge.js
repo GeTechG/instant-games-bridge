@@ -16,7 +16,13 @@
  */
 
 import PlatformBridgeBase from './PlatformBridgeBase'
-import { addJavaScript, createAdvertisementBannerContainer, waitFor } from '../common/utils'
+import {
+    addJavaScript,
+    createAdvertisementBannerContainer,
+    createAdvancedBannerContainers,
+    removeAdvancedBannerContainers,
+    waitFor,
+} from '../common/utils'
 import {
     PLATFORM_ID,
     ACTION_NAME,
@@ -126,9 +132,15 @@ class CrazyGamesPlatformBridge extends PlatformBridgeBase {
 
                     this._defaultStorageType = STORAGE_TYPE.PLATFORM_INTERNAL
                     this._isBannerSupported = true
+                    this._isAdvancedBannersSupported = true
                     this._platformSdk.init().then(() => {
                         this.#isUserAccountAvailable = this._platformSdk.user.isUserAccountAvailable
                         const getPlayerInfoPromise = this.#getPlayer()
+
+                        this._platformSdk.game.addSettingsChangeListener((settings) => {
+                            this._setAudioState(!settings.muteAudio)
+                        })
+                        this._setAudioState(!this._platformSdk.game.settings.muteAudio)
 
                         if (this.options.xsollaProjectId) {
                             this.#ensurePaystationLoaded()
@@ -340,6 +352,30 @@ class CrazyGamesPlatformBridge extends PlatformBridgeBase {
         this._setBannerState(BANNER_STATE.HIDDEN)
     }
 
+    showAdvancedBanners(banners) {
+        this._setAdvancedBannersState(BANNER_STATE.LOADING)
+
+        removeAdvancedBannerContainers()
+        const containerIds = createAdvancedBannerContainers(banners)
+
+        const requests = containerIds.map((id) => this._platformSdk.banner.requestResponsiveBanner(id))
+
+        Promise.all(requests)
+            .then(() => {
+                this._setAdvancedBannersState(BANNER_STATE.SHOWN)
+            })
+            .catch(() => {
+                this._setAdvancedBannersState(BANNER_STATE.FAILED)
+                removeAdvancedBannerContainers()
+            })
+    }
+
+    hideAdvancedBanners() {
+        removeAdvancedBannerContainers()
+        this._platformSdk.banner.clearAllBanners()
+        this._setAdvancedBannersState(BANNER_STATE.HIDDEN)
+    }
+
     showInterstitial() {
         this.#currentAdvertisementIsRewarded = false
         this._platformSdk.ad.requestAd('midgame', this.#adCallbacks)
@@ -512,8 +548,7 @@ class CrazyGamesPlatformBridge extends PlatformBridgeBase {
                     const bySku = new Map((data.items || []).map((it) => [it.sku, it]))
 
                     const mergedProducts = products.map((product) => {
-                        const sku = product.platformProductId || product.id
-                        const x = bySku.get(sku)
+                        const x = bySku.get(product.platformProductId)
 
                         return {
                             id: product.id,

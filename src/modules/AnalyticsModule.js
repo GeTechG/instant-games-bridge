@@ -20,9 +20,9 @@ import packageJson from '../../package.json'
 import { generateRandomId, getGuestUser } from '../common/utils'
 import ModuleBase from './ModuleBase'
 
-const API_URL = 'https://playgama.com/api/events/v3/bridge/analytics'
+const API_URL = 'https://api.playgama.com/api/events/v3/bridge/analytics'
 const DISCORD_API_URL = '/playgama/api/events/v3/bridge/analytics'
-const FLUSH_INTERVAL = 15000
+const FLUSH_INTERVAL = 30000
 const SEND_ATTEMPTS = 2
 
 class AnalyticsModule extends ModuleBase {
@@ -44,6 +44,8 @@ class AnalyticsModule extends ModuleBase {
 
     #pagehideHandler = null
 
+    #isSessionEndSent = false
+
     #timeDiff = 0
 
     #isCompressionSupported = typeof CompressionStream !== 'undefined'
@@ -55,7 +57,9 @@ class AnalyticsModule extends ModuleBase {
 
     initialize(platformBridge) {
         this._platformBridge = platformBridge
-        if (this._platformBridge.options?.sendAnalyticsEvents === false) {
+
+        const isPlaygama = this._platformBridge.platformId === PLATFORM_ID.PLAYGAMA
+        if (!isPlaygama && this._platformBridge.options?.sendAnalyticsEvents === false) {
             this.#isDisabled = true
         }
 
@@ -64,7 +68,10 @@ class AnalyticsModule extends ModuleBase {
             this.#isDisabled = true
         }
 
-        this.#fetchTimeDiff()
+        if (!this.#isDisabled) {
+            this.#fetchTimeDiff()
+        }
+
         this.#gameId = this.#extractGameId()
         this.#playerGuestId = getGuestUser().id
 
@@ -121,7 +128,7 @@ class AnalyticsModule extends ModuleBase {
     }
 
     #createMeta() {
-        return {
+        const meta = {
             bridge_version: packageJson.version,
             platform_id: this._platformBridge.platformId,
             game_id: this.#gameId,
@@ -131,7 +138,15 @@ class AnalyticsModule extends ModuleBase {
             device_type: this._platformBridge.deviceType,
             device_os: this._platformBridge.deviceOs,
             clid: this._platformBridge.additionalData?.clid ?? '',
+            launch_source: this._platformBridge.launchSource,
         }
+
+        const publicToken = this._platformBridge.options?.saas?.publicToken
+        if (publicToken) {
+            meta.public_token = publicToken
+        }
+
+        return meta
     }
 
     async #compressData(data) {
@@ -227,17 +242,27 @@ class AnalyticsModule extends ModuleBase {
 
     #setupPageUnloadHandler() {
         this.#pagehideHandler = () => {
-            this.#flushSync()
+            this.#sendSessionEnd()
         }
 
         this.#visibilityHandler = () => {
             if (document.visibilityState === 'hidden') {
-                this.#flushSync()
+                this.#sendSessionEnd()
             }
         }
 
         document.addEventListener('visibilitychange', this.#visibilityHandler)
         window.addEventListener('pagehide', this.#pagehideHandler)
+    }
+
+    #sendSessionEnd() {
+        if (this.#isSessionEndSent || this.#isDisabled) {
+            return
+        }
+
+        this.#isSessionEndSent = true
+        this.send(`${MODULE_NAME.CORE}_session_end`)
+        this.#flushSync()
     }
 
     #disable() {
@@ -297,6 +322,13 @@ class AnalyticsModule extends ModuleBase {
                 const value = index !== -1 ? parts[index + 1] : null
                 if (value) {
                     return value
+                }
+            }
+
+            if (platformId === PLATFORM_ID.XIAOMI) {
+                const lastPart = parts[parts.length - 1]
+                if (lastPart === 'index.html' && parts.length >= 2) {
+                    return parts[parts.length - 2]
                 }
             }
 

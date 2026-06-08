@@ -15,7 +15,7 @@
  * along with Playgama Bridge. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import EventLite from 'event-lite'
+import { applyLocalEventMixin } from '../common/EventBus'
 import {
     PLATFORM_ID,
     EVENT_NAME,
@@ -70,6 +70,10 @@ class PlatformBridgeBase {
     }
 
     get platformTld() {
+        return null
+    }
+
+    get launchSource() {
         return null
     }
 
@@ -137,12 +141,20 @@ class PlatformBridgeBase {
         return this._isBannerSupported
     }
 
+    get isAdvancedBannersSupported() {
+        return this._isAdvancedBannersSupported
+    }
+
     get isInterstitialSupported() {
         return false
     }
 
     get isMinimumDelayBetweenInterstitialEnabled() {
         return true
+    }
+
+    get initialInterstitialDelay() {
+        return 60
     }
 
     get isRewardedSupported() {
@@ -290,6 +302,8 @@ class PlatformBridgeBase {
 
     _isBannerSupported = false
 
+    _isAdvancedBannersSupported = false
+
     _useAdvertisementErrorPopup = false
 
     _paymentsPurchases = []
@@ -341,6 +355,10 @@ class PlatformBridgeBase {
 
     // platform
     sendMessage() {
+        return Promise.resolve()
+    }
+
+    sendCustomMessage() {
         return Promise.resolve()
     }
 
@@ -481,6 +499,11 @@ class PlatformBridgeBase {
     hideBanner() {
         this._setBannerState(BANNER_STATE.HIDDEN)
     }
+
+    // eslint-disable-next-line no-unused-vars
+    showAdvancedBanners(banners) { }
+
+    hideAdvancedBanners() { }
 
     preloadInterstitial() { }
 
@@ -699,6 +722,10 @@ class PlatformBridgeBase {
         this.emit(EVENT_NAME.BANNER_STATE_CHANGED, state)
     }
 
+    _setAdvancedBannersState(state) {
+        this.emit(EVENT_NAME.ADVANCED_BANNERS_STATE_CHANGED, state)
+    }
+
     _setInterstitialState(state) {
         this.emit(EVENT_NAME.INTERSTITIAL_STATE_CHANGED, state)
 
@@ -776,7 +803,7 @@ class PlatformBridgeBase {
                     ...product[this.platformId],
                 }
 
-                mergedProduct.platformProductId = mergedProduct.id
+                mergedProduct.platformProductId = mergedProduct.id ?? product.id
                 mergedProduct.id = product.id
 
                 return mergedProduct
@@ -798,7 +825,7 @@ class PlatformBridgeBase {
             ...product[this.platformId],
         }
 
-        mergedProduct.platformProductId = mergedProduct.id
+        mergedProduct.platformProductId = mergedProduct.id ?? product.id
         mergedProduct.id = product.id
 
         return mergedProduct
@@ -882,5 +909,5 @@ class PlatformBridgeBase {
     }
 }
 
-EventLite.mixin(PlatformBridgeBase.prototype)
+applyLocalEventMixin(PlatformBridgeBase.prototype)
 export default PlatformBridgeBase

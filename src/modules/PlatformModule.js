@@ -15,7 +15,7 @@
  * along with Playgama Bridge. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import EventLite from 'event-lite'
+import eventBus, { applyEventBusMixin } from '../common/EventBus'
 import ModuleBase from './ModuleBase'
 import { EVENT_NAME, MODULE_NAME, PLATFORM_MESSAGE } from '../constants'
 import analyticsModule from './AnalyticsModule'
@@ -41,6 +41,10 @@ class PlatformModule extends ModuleBase {
         return this._platformBridge.platformTld
     }
 
+    get launchSource() {
+        return this._platformBridge.launchSource
+    }
+
     get isGetAllGamesSupported() {
         return this._platformBridge.isPlatformGetAllGamesSupported
     }
@@ -61,21 +65,24 @@ class PlatformModule extends ModuleBase {
 
     #startTime = performance.now()
 
+    #messagesExcludedFromAnalytics = new Set([
+        PLATFORM_MESSAGE.GAMEPLAY_STARTED,
+        PLATFORM_MESSAGE.GAMEPLAY_STOPPED,
+        PLATFORM_MESSAGE.IN_GAME_LOADING_STARTED,
+        PLATFORM_MESSAGE.IN_GAME_LOADING_STOPPED,
+    ])
+
     constructor(platformBridge) {
         super(platformBridge)
 
-        this._platformBridge.on(
-            EVENT_NAME.AUDIO_STATE_CHANGED,
-            (isEnabled) => this.emit(EVENT_NAME.AUDIO_STATE_CHANGED, isEnabled),
-        )
-
-        this._platformBridge.on(
-            EVENT_NAME.PAUSE_STATE_CHANGED,
-            (isPaused) => this.emit(EVENT_NAME.PAUSE_STATE_CHANGED, isPaused),
-        )
+        this._forwardEvent(EVENT_NAME.AUDIO_STATE_CHANGED)
+        this._forwardEvent(EVENT_NAME.PAUSE_STATE_CHANGED)
     }
 
-    sendMessage(message, options = {}) {
+    sendMessage(message, rawOptions) {
+        // Engine integrations (e.g. Godot) can pass an explicit null instead of omitting the argument
+        const options = rawOptions ?? {}
+
         const analyticsData = {}
 
         if (message === PLATFORM_MESSAGE.GAME_READY) {
@@ -86,8 +93,7 @@ class PlatformModule extends ModuleBase {
             this.#isGameReadyMessageSent = true
 
             const endTime = performance.now()
-            const timeInSeconds = ((endTime - this.#startTime) / 1000).toFixed(2)
-            analyticsData.time_s = timeInSeconds
+            analyticsData.time_s = ((endTime - this.#startTime) / 1000).toFixed(2)
 
             const overlay = document.getElementById('loading-overlay')
             if (overlay) {
@@ -103,9 +109,21 @@ class PlatformModule extends ModuleBase {
             analyticsData.level = String(options.level)
         }
 
-        analyticsModule.send(`${MODULE_NAME.PLATFORM}_message_${message}`, analyticsData)
+        if (!this.#messagesExcludedFromAnalytics.has(message)) {
+            analyticsModule.send(`${MODULE_NAME.PLATFORM}_message_${message}`, analyticsData)
+        }
+
+        eventBus.emit(EVENT_NAME.PLATFORM_MESSAGE_SENT, message)
 
         return this._platformBridge.sendMessage(message, options)
+    }
+
+    sendCustomMessage(id, options) {
+        analyticsModule.send(`${MODULE_NAME.PLATFORM}_custom_message`, { id })
+
+        eventBus.emit(EVENT_NAME.PLATFORM_MESSAGE_SENT, id)
+
+        return this._platformBridge.sendCustomMessage(id, options)
     }
 
     getServerTime() {
@@ -128,5 +146,5 @@ class PlatformModule extends ModuleBase {
     }
 }
 
-EventLite.mixin(PlatformModule.prototype)
+applyEventBusMixin(PlatformModule.prototype)
 export default PlatformModule

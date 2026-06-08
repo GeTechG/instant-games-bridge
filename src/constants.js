@@ -15,8 +15,8 @@
  * along with Playgama Bridge. If not, see <https://www.gnu.org/licenses/>.
  */
 
-export const SAAS_URL = 'https://playgama.com/api/bridge/v1'
-export const TIMESTAMP_URL = 'https://playgama.com/api/v1/timestamp/now'
+export const SAAS_URL = 'https://api.playgama.com/api/bridge/v1'
+export const TIMESTAMP_URL = 'https://api.playgama.com/api/v1/timestamp/now'
 
 export const PLATFORM_ID = {
     VK: 'vk',
@@ -26,6 +26,7 @@ export const PLATFORM_ID = {
     ABSOLUTE_GAMES: 'absolute_games',
     GAME_DISTRIBUTION: 'game_distribution',
     PLAYGAMA: 'playgama',
+    STANDALONE: 'standalone',
     PLAYDECK: 'playdeck',
     TELEGRAM: 'telegram',
     Y8: 'y8',
@@ -48,6 +49,7 @@ export const PLATFORM_ID = {
     TIKTOK: 'tiktok',
     DLIGHTEK: 'dlightek',
     GAMESNACKS: 'gamesnacks',
+    SAMSUNG: 'samsung',
 }
 
 export const MODULE_NAME = {
@@ -65,16 +67,21 @@ export const MODULE_NAME = {
     CLIPBOARD: 'clipboard',
     ACHIEVEMENTS: 'achievements',
     ANALYTICS: 'analytics',
+    RECORDER: 'recorder',
+    CROSS_PROMO: 'cross_promo',
 }
 
 export const EVENT_NAME = {
     INTERSTITIAL_STATE_CHANGED: 'interstitial_state_changed',
     REWARDED_STATE_CHANGED: 'rewarded_state_changed',
     BANNER_STATE_CHANGED: 'banner_state_changed',
+    ADVANCED_BANNERS_STATE_CHANGED: 'advanced_banners_state_changed',
     VISIBILITY_STATE_CHANGED: 'visibility_state_changed',
     AUDIO_STATE_CHANGED: 'audio_state_changed',
     PAUSE_STATE_CHANGED: 'pause_state_changed',
     ORIENTATION_STATE_CHANGED: 'orientation_state_changed',
+    SCREEN_SIZE_CHANGED: 'screen_size_changed',
+    PLATFORM_MESSAGE_SENT: 'platform_message_sent',
 }
 
 export const VISIBILITY_STATE = {
@@ -108,8 +115,12 @@ export const BANNER_POSITION = {
     TOP: 'top',
     BOTTOM: 'bottom',
 }
-
+export const ADVANCED_BANNERS_ACTION = {
+    SHOW: 'show',
+    HIDE: 'hide',
+}
 export const BANNER_CONTAINER_ID = 'banner-container'
+export const ADVANCED_BANNER_CONTAINER_ID_PREFIX = 'advanced-banner-'
 export const INTERSTITIAL_CONTAINER_ID = 'interstitial-container'
 export const REWARDED_CONTAINER_ID = 'rewarded-container'
 
@@ -160,6 +171,10 @@ export const LEADERBOARD_TYPE = {
     IN_GAME: 'in_game',
     NATIVE: 'native',
     NATIVE_POPUP: 'native_popup',
+}
+
+export const LAUNCH_SOURCE = {
+    NOTIFICATION: 'notification',
 }
 
 export const ACTION_NAME = {
